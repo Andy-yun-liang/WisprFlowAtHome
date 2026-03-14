@@ -1,0 +1,18 @@
+## Codebase Patterns
+- This is an Electron + TypeScript app using electron-vite for bundling
+- Main process: src/main/ — all OS interaction (hotkey, audio, Whisper API, clipboard, paste, tray, keychain)
+- Renderer processes: src/renderer/hud/ and src/renderer/settings/ — pure HTML/TS/CSS, no framework
+- Preload scripts: src/preload/ — contextBridge with minimal surface area
+- Shared types/constants: src/shared/types.ts and src/shared/constants.ts
+- IPC channel names are defined as constants in IPC object in src/shared/types.ts
+- Settings persisted via electron-store in src/main/config-store.ts; API key in keytar via src/main/keychain.ts
+- Build: `npm run build` runs electron-vite; output goes to out/
+- Native addons: uiohook-napi (PTT), keytar (keychain), @nut-tree-fork/nut-js (paste sim)
+- @nut-tree/nut-js was 404 on npm — the package is now @nut-tree-fork/nut-js
+- uiohook-napi latest is 1.5.4 (not 1.5.5)
+- Audio: node-record-lpcm16 spawns SoX subprocess; requires `brew install sox` on macOS
+- SoX emits "exit code null" error when forcefully stopped — this is expected, suppress with a `stopping` flag
+- Typecheck: `./node_modules/.bin/tsc --project tsconfig.node.json --noEmit`
+- node-record-lpcm16 has no @types — there is a manual declaration at src/main/node-record-lpcm16.d.ts
+- nut-js keyboard API: pressKey/releaseKey are directly on `keyboard` object, NOT on `keyboard.key`
+- macOS requires mic permission via systemPreferences.askForMediaAccess('microphone') before SoX will work in Electron

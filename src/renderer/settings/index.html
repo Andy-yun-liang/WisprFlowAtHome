@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WhisprAtHome Settings</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 13px;
+      background: #1e1e1e;
+      color: #e0e0e0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #888;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 12px;
+      color: #aaa;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      background: #2a2a2a;
+      border: 1px solid #3a3a3a;
+      border-radius: 6px;
+      padding: 8px 10px;
+      color: #e0e0e0;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+      border-color: #555;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .toggle-label {
+      font-size: 13px;
+      color: #e0e0e0;
+    }
+
+    .toggle {
+      position: relative;
+      width: 36px;
+      height: 20px;
+    }
+
+    .toggle input {
+      display: none;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #3a3a3a;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .toggle-slider::after {
+      content: '';
+      position: absolute;
+      left: 2px;
+      top: 2px;
+      width: 16px;
+      height: 16px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+
+    .toggle input:checked + .toggle-slider {
+      background: #2563eb;
+    }
+
+    .toggle input:checked + .toggle-slider::after {
+      transform: translateX(16px);
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: none;
+      font-size: 13px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: opacity 0.15s;
+    }
+
+    .btn:hover {
+      opacity: 0.85;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background: #3a3a3a;
+      color: #e0e0e0;
+    }
+
+    .api-key-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .api-key-row input {
+      flex: 1;
+    }
+
+    .status-msg {
+      font-size: 11px;
+      color: #4ade80;
+      min-height: 14px;
+    }
+
+    .status-msg.error {
+      color: #ff453a;
+    }
+
+    .hotkey-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .hotkey-row input {
+      flex: 1;
+    }
+
+    #hotkey-hint {
+      font-size: 11px;
+      color: #666;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid #2a2a2a;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>WhisprAtHome Settings</h1>
+
+    <div class="section">
+      <div class="section-title">API Key</div>
+      <div class="field">
+        <label>OpenAI API Key</label>
+        <div class="api-key-row">
+          <input type="password" id="api-key" placeholder="sk-..." autocomplete="off" />
+          <button class="btn btn-primary" id="save-key-btn">Save</button>
+        </div>
+        <div class="status-msg" id="key-status"></div>
+      </div>
+    </div>
+
+    <hr />
+
+    <div class="section">
+      <div class="section-title">Push-to-Talk Hotkey</div>
+      <div class="field">
+        <label>Current hotkey (modifier keys only, e.g. Ctrl+Alt)</label>
+        <div class="hotkey-row">
+          <input type="text" id="hotkey-input" placeholder="Ctrl+Alt" />
+          <button class="btn btn-secondary" id="rebind-btn">Apply</button>
+        </div>
+        <div id="hotkey-hint">Default: Ctrl+Alt (macOS: Ctrl+Option)</div>
+        <div class="status-msg" id="hotkey-status"></div>
+      </div>
+    </div>
+
+    <hr />
+
+    <div class="section">
+      <div class="section-title">Behavior</div>
+
+      <div class="toggle-row">
+        <span class="toggle-label">Remove filler words</span>
+        <label class="toggle">
+          <input type="checkbox" id="filler-toggle" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <span class="toggle-label">HUD position: bottom of screen</span>
+        <label class="toggle">
+          <input type="checkbox" id="hud-position-toggle" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <span class="toggle-label">Launch at login</span>
+        <label class="toggle">
+          <input type="checkbox" id="autostart-toggle" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="./settings.ts"></script>
+</body>
+</html>

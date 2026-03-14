@@ -1,0 +1,144 @@
+{
+  "project": "WhisprAtHome",
+  "branchName": "ralph/settings-ui-and-packaging",
+  "description": "Redesign Settings window to macOS System Settings style with sidebar nav, add Whisper model/language/filler word settings, generate app icon programmatically, and produce a macOS .dmg installer.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Extend Settings types and IPC handlers",
+      "description": "As a developer, I need the Settings type and electron-store config extended with whisperModel, language, and enabledFillerWords so that new settings screens can persist their values.",
+      "acceptanceCriteria": [
+        "Add `whisperModel: 'whisper-1' | 'whisper-large-v3-turbo'` to Settings type in src/shared/types.ts (default: 'whisper-1')",
+        "Add `language: string` to Settings type (default: 'auto')",
+        "Add `enabledFillerWords: string[]` to Settings type (default: all FILLER_WORDS from constants.ts)",
+        "Update DEFAULT_SETTINGS in src/main/config-store.ts with the three new fields",
+        "Update src/main/whisper-client.ts transcribeChunk() to pass model and language from a settings argument instead of hardcoding whisper-1 and 'en'",
+        "Update src/main/index.ts onPttRelease() to read model and language from getSettings() and pass to transcribeAudio()",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Generate app icon assets programmatically",
+      "description": "As a developer, I need proper app icons so the packaged .dmg looks professional and tray icons are the correct 22×22px macOS menu bar size.",
+      "acceptanceCriteria": [
+        "Create scripts/generate-icons.mjs that runs with `node scripts/generate-icons.mjs` using only the `canvas` npm devDependency",
+        "Icon design: dark navy rounded-rect background (#1a1a2e), white microphone body, subtle white waveform arcs on the right side",
+        "Script generates build/icon.icns with PNG layers at 16, 32, 64, 128, 256, 512px using the ICNS binary format (4-byte OSType + 4-byte length + PNG data per layer)",
+        "Script generates resources/tray-idle.png at 22×22px (grey mic)",
+        "Script generates resources/tray-recording.png at 22×22px (red mic)",
+        "Script generates resources/tray-processing.png at 22×22px (yellow mic)",
+        "Script generates resources/tray-error.png at 22×22px (orange mic)",
+        "Add `canvas` to devDependencies in package.json",
+        "Add `\"prebuild\": \"node scripts/generate-icons.mjs\"` to package.json scripts",
+        "Script runs without error: `node scripts/generate-icons.mjs`"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Settings window sidebar navigation shell",
+      "description": "As a user, I want a settings window that looks like macOS System Settings with a sidebar and content panel so it feels native and familiar.",
+      "acceptanceCriteria": [
+        "Settings window is 700×480px, non-resizable",
+        "Left sidebar is 200px wide with a slightly darker background (#1a1a1a) vs content area (#242424)",
+        "Sidebar contains four nav items: ⚙️ General, 🎙️ Transcription, ✂️ Text Cleanup, ℹ️ About",
+        "Selected nav item has a rounded blue pill highlight (#2563eb, 6px border-radius)",
+        "Right content panel shows only the selected section — others are hidden with display:none",
+        "Default selected section is General",
+        "Nav item click switches the visible section without any page reload",
+        "Section titles appear as large headings (18px, bold, white) at the top of each content panel",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "General settings section",
+      "description": "As a user, I want to configure my PTT hotkey, HUD position, and auto-start from the General section.",
+      "acceptanceCriteria": [
+        "General section shows three settings rows, each with a label on the left and control on the right",
+        "PTT Hotkey row: shows current hotkey in a grey pill badge; an 'Edit' button enters capture mode showing 'Press your hotkey…'; pressing any modifier combo captures it and calls rebindHotkey IPC; pressing Escape cancels",
+        "HUD Position row: segmented control with 'Top' and 'Bottom' options; selected option is highlighted blue; calls setSetting('hudPosition', ...) on change",
+        "Launch at Login row: toggle switch; reflects current autoStart setting; calls setLoginItem IPC on change",
+        "All controls load their initial values from getSettings() on page load",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Transcription settings section",
+      "description": "As a user, I want to set my OpenAI API key, Whisper model, and transcription language from one section.",
+      "acceptanceCriteria": [
+        "API Key row: password input masked with dots; Save button; on save calls setApiKey IPC and shows 'Saved ✓' in green for 2s; if key already exists shows '●●●●●●●●●●●●●●●●●●●●' placeholder; clicking input clears placeholder so user can type new key",
+        "Model row: native <select> dropdown with options 'whisper-1 (default)' and 'whisper-large-v3-turbo (faster)'; saves via setSetting('whisperModel', ...) on change",
+        "Language row: native <select> dropdown with options: Auto-detect (value: 'auto'), English (en), Spanish (es), French (fr), German (de), Portuguese (pt), Japanese (ja), Chinese (zh); saves via setSetting('language', ...) on change",
+        "All controls load initial values from getSettings() on page load",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Text Cleanup settings section",
+      "description": "As a user, I want to toggle filler word removal on/off and control which preset words are removed.",
+      "acceptanceCriteria": [
+        "Master toggle row at the top: 'Remove filler words' label + toggle switch; maps to fillerWordRemoval setting",
+        "Below master toggle: a grid (3 columns) of individual word chips for each word in FILLER_WORDS constant: um, uh, umm, uhh, hmm, like, you know, basically, literally, actually, right",
+        "Each chip is a pill button showing the word; active chips have blue background (#2563eb), inactive chips have grey background (#3a3a3a)",
+        "Clicking a chip toggles it and saves the updated enabledFillerWords array via setSetting('enabledFillerWords', [...])",
+        "When master toggle is off, the entire word grid has opacity: 0.4 and pointer-events: none",
+        "Initial chip states reflect which words are in the enabledFillerWords setting array",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "About settings section",
+      "description": "As a user, I want to see the app version and useful info in an About screen.",
+      "acceptanceCriteria": [
+        "About section shows the app icon image (resources/tray-idle.png) at 64×64px centered",
+        "Shows 'WhisprAtHome' as large title (22px bold)",
+        "Shows version string read from package.json (hardcode the value from package.json — no need for IPC)",
+        "Shows 'Whisper API pricing: $0.006 / min' as a dimmed helper line",
+        "'Check for updates' button styled as secondary button; clicking it logs 'Check for updates clicked' to console (no-op placeholder)",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "macOS DMG packaging via electron-builder",
+      "description": "As a developer, I want `npm run make` to produce a working unsigned .dmg installer for macOS.",
+      "acceptanceCriteria": [
+        "electron-builder.config.ts sets `mac.identity` to `null` (skip code signing)",
+        "electron-builder.config.ts targets `['dmg']` for mac with arch `['arm64', 'x64']`",
+        "asarUnpack includes: `**/node_modules/uiohook-napi/**`, `**/node_modules/keytar/**`, `**/node_modules/@nut-tree-fork/**`, `**/node_modules/node-record-lpcm16/**`",
+        "`npm run make` script in package.json is: `npm run build && electron-builder --config electron-builder.config.ts`",
+        "`npm run make` completes without fatal error on macOS",
+        "Output .dmg file exists in dist/ folder after running make",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
