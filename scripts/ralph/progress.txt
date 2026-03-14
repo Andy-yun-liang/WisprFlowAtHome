@@ -16,3 +16,14 @@
 - node-record-lpcm16 has no @types — there is a manual declaration at src/main/node-record-lpcm16.d.ts
 - nut-js keyboard API: pressKey/releaseKey are directly on `keyboard` object, NOT on `keyboard.key`
 - macOS requires mic permission via systemPreferences.askForMediaAccess('microphone') before SoX will work in Electron
+
+## 2026-03-14 - US-001
+- Extended Settings interface in src/shared/types.ts with whisperModel, language, enabledFillerWords
+- Updated DEFAULT_SETTINGS in src/main/config-store.ts with the three new fields (defaults: whisper-1, 'auto', all FILLER_WORDS)
+- Updated getSettings() in config-store.ts to return the new fields
+- Refactored transcribeAudio/transcribeChunk in src/main/whisper-client.ts to accept a TranscribeSettings argument instead of hardcoding model/language; language 'auto' omits the language param from the API call
+- Updated onPttRelease() in src/main/index.ts to read whisperModel and language from getSettings() and pass to transcribeAudio
+- **Learnings for future iterations:**
+  - whisper-client.ts exports a TranscribeSettings interface; importers should use that type
+  - When language is 'auto', omit the language param from the Whisper API call (passing undefined errors out)
+---
