@@ -97,7 +97,11 @@ async function onPttRelease(): Promise<void> {
   }
 
   try {
-    const raw = await transcribeAudio(pcm)
+    const transcribeSettings = getSettings()
+    const raw = await transcribeAudio(pcm, {
+      whisperModel: transcribeSettings.whisperModel,
+      language: transcribeSettings.language
+    })
 
     if (!raw.trim()) {
       setState('idle')

@@ -7,6 +7,9 @@ export interface Settings {
   hudPosition: 'top' | 'bottom'
   fillerWordRemoval: boolean
   autoStart: boolean
+  whisperModel: 'whisper-1' | 'whisper-large-v3-turbo'
+  language: string
+  enabledFillerWords: string[]
 }
 
 // IPC channel constants
