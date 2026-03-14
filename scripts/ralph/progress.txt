@@ -1,4 +1,7 @@
 ## Codebase Patterns
+- ICNS binary format: 8-byte file header ('icns' + total size), then entries of 8 bytes (4-byte OSType + 4-byte entry size including header) + raw PNG data; OSType codes: icp4=16, icp5=32, icp6=64, ic07=128, ic08=256, ic09=512
+- canvas package (node-canvas) is installed as devDependency for icon generation; uses `createCanvas` from 'canvas'
+- prebuild script runs before `npm run build` automatically via npm lifecycle hooks
 - This is an Electron + TypeScript app using electron-vite for bundling
 - Main process: src/main/ — all OS interaction (hotkey, audio, Whisper API, clipboard, paste, tray, keychain)
 - Renderer processes: src/renderer/hud/ and src/renderer/settings/ — pure HTML/TS/CSS, no framework
@@ -26,4 +29,18 @@
 - **Learnings for future iterations:**
   - whisper-client.ts exports a TranscribeSettings interface; importers should use that type
   - When language is 'auto', omit the language param from the Whisper API call (passing undefined errors out)
+---
+
+## 2026-03-14 - US-002
+- Created scripts/generate-icons.mjs using the `canvas` devDependency
+- Script draws a dark navy rounded-rect app icon with white mic body and waveform arcs
+- Script generates build/icon.icns (ICNS binary with PNG layers at 16/32/64/128/256/512px)
+- Script generates resources/tray-{idle,recording,processing,error}.png at 22×22px with grey/red/yellow/orange mic colours
+- Added `canvas` to devDependencies and `prebuild` script to package.json
+- Files changed: scripts/generate-icons.mjs, package.json, package-lock.json, build/icon.icns, resources/tray-*.png
+- **Learnings for future iterations:**
+  - ICNS format requires 4-byte OSType + 4-byte length (including 8-byte header) + raw PNG bytes per entry
+  - OSType codes: icp4=16px, icp5=32px, icp6=64px, ic07=128px, ic08=256px, ic09=512px
+  - canvas.toBuffer('image/png') returns a Node.js Buffer suitable for writing to disk
+  - node scripts/generate-icons.mjs can be run standalone without building the Electron app
 ---

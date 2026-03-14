@@ -37,7 +37,7 @@
         "Script runs without error: `node scripts/generate-icons.mjs`"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
