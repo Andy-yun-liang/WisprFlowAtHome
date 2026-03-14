@@ -10,8 +10,8 @@ export function openSettingsWindow(): void {
   }
 
   settingsWindow = new BrowserWindow({
-    width: 480,
-    height: 520,
+    width: 700,
+    height: 480,
     title: 'WhisprAtHome Settings',
     resizable: false,
     minimizable: false,
