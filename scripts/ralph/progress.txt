@@ -31,6 +31,23 @@
   - When language is 'auto', omit the language param from the Whisper API call (passing undefined errors out)
 ---
 
+## 2026-03-14 - US-003 through US-007 (implemented together)
+- Redesigned settings window with macOS System Settings-style sidebar navigation
+- Updated settings-window.ts: window is now 700×480px
+- Rewrote src/renderer/settings/index.html: sidebar nav (200px, #1a1a1a) + content area (#242424), 4 sections
+- Rewrote src/renderer/settings/settings.ts: sidebar switching, all section logic
+- General section: PTT hotkey capture (keydown listener for modifier combos), HUD segmented control, autostart toggle
+- Transcription section: API key password input with masking, model select, language select
+- Text Cleanup section: master filler toggle, word chips grid (3 columns) rendered dynamically from FILLER_WORDS
+- About section: tray-idle.png icon, version hardcoded, pricing, check-updates button
+- Files changed: src/renderer/settings/index.html, src/renderer/settings/settings.ts, src/main/settings-window.ts
+- **Learnings for future iterations:**
+  - Renderer can import from ../../shared/constants directly (relative path works alongside @shared alias)
+  - Word chips rendered dynamically via JS; use classList.toggle for active state
+  - Sidebar nav uses data-section attribute on nav items to match section IDs (section-{id})
+  - tsconfig.web.json typecheck: `./node_modules/.bin/tsc --project tsconfig.web.json --noEmit`
+---
+
 ## 2026-03-14 - US-002
 - Created scripts/generate-icons.mjs using the `canvas` devDependency
 - Script draws a dark navy rounded-rect app icon with white mic body and waveform arcs

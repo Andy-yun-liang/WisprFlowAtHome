@@ -9,12 +9,13 @@ const config: Configuration = {
   },
   files: ['out/**/*'],
   asarUnpack: [
-    'out/main/node_modules/uiohook-napi/**/*',
-    'out/main/node_modules/keytar/**/*',
-    'out/main/node_modules/@nut-tree-fork/**/*',
-    'out/main/node_modules/node-record-lpcm16/**/*'
+    '**/node_modules/uiohook-napi/**',
+    '**/node_modules/keytar/**',
+    '**/node_modules/@nut-tree-fork/**',
+    '**/node_modules/node-record-lpcm16/**'
   ],
   mac: {
+    identity: null,
     target: [{ target: 'dmg', arch: ['arm64', 'x64'] }],
     icon: 'build/icon.icns',
     entitlementsInherit: 'build/entitlements.mac.plist',

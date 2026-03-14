@@ -10,7 +10,7 @@
     "prebuild": "node scripts/generate-icons.mjs",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
-    "make": "npm run build && electron-builder",
+    "make": "npm run build && electron-builder --config electron-builder.config.ts",
     "postinstall": "electron-rebuild -f -w uiohook-napi,keytar"
   },
   "dependencies": {
