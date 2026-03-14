@@ -48,6 +48,17 @@
   - tsconfig.web.json typecheck: `./node_modules/.bin/tsc --project tsconfig.web.json --noEmit`
 ---
 
+## 2026-03-14 - US-008
+- Updated electron-builder.config.ts: added `mac.identity: null` to skip code signing
+- Fixed asarUnpack glob patterns to use `**/node_modules/X/**` format (not prefixed with `out/main/`)
+- Updated `make` script in package.json to include `--config electron-builder.config.ts`
+- Files changed: electron-builder.config.ts, package.json
+- **Learnings for future iterations:**
+  - electron-builder asarUnpack globs should be `**/node_modules/pkg/**` not `out/main/node_modules/pkg/**/*`
+  - `mac.identity: null` bypasses code signing (needed for unsigned local builds)
+  - The `--config electron-builder.config.ts` flag is required if the config file is TypeScript
+---
+
 ## 2026-03-14 - US-002
 - Created scripts/generate-icons.mjs using the `canvas` devDependency
 - Script draws a dark navy rounded-rect app icon with white mic body and waveform arcs
