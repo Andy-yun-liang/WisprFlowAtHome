@@ -96,17 +96,22 @@ export function createAudioRecorder(onChunk: (chunk: Buffer) => void): AudioReco
           return
         }
 
-        setImmediate(() => {
-          stopping = true
-          try {
-            proc!.kill('SIGTERM')
-          } catch {
-            // ignore
-          }
-          console.log(`[AudioRecorder] Stopped. Collected ${chunks.length} chunks, total ${Buffer.concat(chunks).length} bytes`)
-          resolve(Buffer.concat(chunks))
+        stopping = true
+
+        // Wait for stdout to close so all buffered data is collected before resolving
+        proc!.stdout!.on('end', () => {
+          const buf = Buffer.concat(chunks)
+          console.log(`[AudioRecorder] Stopped. Collected ${chunks.length} chunks, total ${buf.length} bytes`)
+          resolve(buf)
           proc = null
         })
+
+        try {
+          proc!.kill('SIGTERM')
+        } catch {
+          resolve(Buffer.concat(chunks))
+          proc = null
+        }
       })
     }
   }
