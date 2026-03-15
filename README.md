@@ -1,6 +1,6 @@
 # WhisprAtHome
 
-A push-to-talk speech-to-text tool for macOS. Hold a hotkey, speak, release — your words are transcribed via OpenAI Whisper and pasted into whatever app is focused.
+A push-to-talk speech-to-text tool for macOS and Windows. Hold a hotkey, speak, release — your words are transcribed via OpenAI Whisper and pasted into whatever app is focused.
 
 Built as a personal replacement for Wispr Flow.
 
@@ -29,38 +29,52 @@ A floating HUD shows recording state (red dot + waveform), processing (spinner),
 
 ## Requirements
 
-- **macOS** (arm64 / Apple Silicon — Intel not currently packaged)
-- An **OpenAI API key** with access to the Whisper API
-  - Pricing: $0.006 per minute of audio — very cheap for typical use
+- **macOS** (arm64 / Apple Silicon) or **Windows** (x64)
+- An **OpenAI API key** (or Groq API key)
+  - Pricing: $0.006/min for `whisper-1`, see [OpenAI pricing](https://platform.openai.com/docs/pricing) for newer models
   - Get one at [platform.openai.com](https://platform.openai.com)
-- **macOS permissions** (prompted on first launch):
-  - Microphone access
-  - Accessibility access (required for auto-paste)
-
-SoX (the audio capture tool) is **bundled inside the app** — no Homebrew install needed.
+- Microphone access and Accessibility/paste permissions (prompted on first launch)
 
 ---
 
-## Install — DMG (easiest)
+## Download
 
-1. Download `WhisprAtHome-1.0.0-arm64.dmg` from the [Releases](../../releases) page
+Get the latest release: **[v1.1.2](https://github.com/Andy-yun-liang/WisprFlowAtHome/releases/tag/v1.1.2)**
+
+---
+
+### Windows
+
+1. Download `WhisprAtHome Setup 1.1.2.exe` from the [releases page](https://github.com/Andy-yun-liang/WisprFlowAtHome/releases/tag/v1.1.2)
+2. Run the installer
+
+> **Windows SmartScreen warning:** Windows may show a "Windows protected your PC" popup because the app is unsigned. Click **"More info"** → **"Run anyway"** to proceed.
+
+3. The Settings window opens automatically — enter your API key and click **Save**
+4. Allow microphone access when prompted
+5. You're ready — hold `Ctrl+Alt`, speak, release
+
+---
+
+### macOS
+
+1. Download `WhisprAtHome-1.1.2-arm64.dmg` from the [releases page](https://github.com/Andy-yun-liang/WisprFlowAtHome/releases/tag/v1.1.2)
 2. Open the DMG, drag **WhisprAtHome** to your Applications folder
 3. Launch the app from Applications
 
-**First launch on macOS will block it** because the app is unsigned. To get past this:
-
-```
-System Settings → Privacy & Security → scroll down → "WhisprAtHome was blocked" → Open Anyway
-```
-
-Or from Terminal:
-```bash
-xattr -cr /Applications/WhisprAtHome.app
-```
+> ⚠️ **Important — macOS will say the file is damaged and move it to the Trash.** This happens because the app is unsigned. Do NOT skip this step:
+>
+> Open Terminal and run:
+> ```bash
+> xattr -cr /Applications/WhisprAtHome.app
+> ```
+> Then launch the app again. Alternatively: **System Settings → Privacy & Security → scroll down → "WhisprAtHome was blocked" → Open Anyway**
 
 4. The Settings window opens automatically — enter your OpenAI API key and click **Save**
 5. Grant Microphone and Accessibility permissions when prompted
 6. You're ready — hold `Ctrl+Option`, speak, release
+
+> macOS note: SoX (audio capture) is bundled inside the app — no Homebrew install needed.
 
 ---
 
@@ -85,18 +99,17 @@ npm run dev
 
 The app starts with hot reload. Settings and HUD windows open as normal.
 
-### Build a distributable DMG
+### Build a distributable
 
 ```bash
 npm run make
 ```
 
-Output: `dist/WhisprAtHome-1.0.0-arm64.dmg`
+Output:
+- **macOS**: `dist/WhisprAtHome-1.1.2-arm64.dmg`
+- **Windows**: `dist/WhisprAtHome Setup 1.1.2.exe`
 
-The build automatically:
-- Bundles the SoX binary and all its dylibs (no system dependency)
-- Generates the app icon and DMG background
-- Packages everything via electron-builder
+The build automatically generates all icons, bundles the SoX binary (macOS only), and packages everything via electron-builder.
 
 ---
 
@@ -164,7 +177,7 @@ Check System Settings → Privacy & Security → Microphone → enable WhisprAtH
 Grant Accessibility permission: System Settings → Privacy & Security → Accessibility → enable WhisprAtHome.
 
 **Transcription is slow**
-Switch to `large-v3-turbo` in Settings → Whisper Model — it's faster with similar accuracy.
+Switch to `gpt-4o-mini-transcribe` (OpenAI) or `distil-large-v3-en` (Groq) in Settings → Whisper Model — faster with similar accuracy.
 
 ---
 
