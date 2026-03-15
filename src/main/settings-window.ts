@@ -16,6 +16,7 @@ export function openSettingsWindow(): void {
     resizable: false,
     minimizable: false,
     maximizable: false,
+    center: true,
     show: false,
     webPreferences: {
       preload: join(__dirname, '../preload/settings-preload.js'),

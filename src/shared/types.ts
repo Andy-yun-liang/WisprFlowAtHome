@@ -32,7 +32,12 @@ export const IPC = {
   HOTKEY_REBIND: 'hotkey:rebind',
 
   // Renderer → Main (auto-start)
-  SET_LOGIN_ITEM: 'app:set-login-item'
+  SET_LOGIN_ITEM: 'app:set-login-item',
+
+  // Stats
+  STATS_GET: 'stats:get',
+  STATS_RESET: 'stats:reset',
+  HISTORY_GET: 'stats:history'
 } as const
 
 export type IpcChannel = (typeof IPC)[keyof typeof IPC]
@@ -43,7 +48,25 @@ export interface StateChangedPayload {
   errorMessage?: string
 }
 
+export interface UsageStats {
+  totalRecordings: number
+  totalWords: number
+  totalDurationSecs: number
+  totalCostUsd: number
+  lastWpm: number
+}
+
+export interface TranscriptEntry {
+  text: string
+  timestamp: number   // ms since epoch
+  wordCount: number
+  wpm: number
+}
+
 export interface TranscriptReadyPayload {
   text: string
   raw: string
+  wordCount: number
+  wpm: number
+  durationSecs: number
 }

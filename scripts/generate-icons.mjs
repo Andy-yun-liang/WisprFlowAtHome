@@ -9,7 +9,7 @@
  *   resources/tray-error.png  — 22x22 orange mic (error state)
  */
 
-import { createCanvas } from 'canvas';
+import { createCanvas, loadImage } from 'canvas';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -161,13 +161,14 @@ function drawTrayIcon(color) {
 // ─── ICNS builder ───────────────────────────────────────────────────────────
 
 // ICNS OSType codes for PNG data at each size
+// Standard macOS ICNS sizes. ic10 (1024px) is required for Retina dock/Finder display.
 const ICNS_SIZES = [
-  { size: 16,  ostype: 'icp4' },
-  { size: 32,  ostype: 'icp5' },
-  { size: 64,  ostype: 'icp6' },
-  { size: 128, ostype: 'ic07' },
-  { size: 256, ostype: 'ic08' },
-  { size: 512, ostype: 'ic09' },
+  { size: 16,   ostype: 'icp4' },
+  { size: 32,   ostype: 'icp5' },
+  { size: 128,  ostype: 'ic07' },
+  { size: 256,  ostype: 'ic08' },
+  { size: 512,  ostype: 'ic09' },
+  { size: 1024, ostype: 'ic10' }, // 512×512@2x — required for Retina displays
 ];
 
 function buildIcns(pngBuffers) {
@@ -196,6 +197,8 @@ function buildIcns(pngBuffers) {
 
 // ─── Main ────────────────────────────────────────────────────────────────────
 
+const mode = process.argv[2] // '--icons-only' | '--inline-only' | undefined (both)
+
 async function main() {
   // Ensure output directories exist
   const buildDir = path.join(projectRoot, 'build');
@@ -203,16 +206,70 @@ async function main() {
   fs.mkdirSync(buildDir, { recursive: true });
   fs.mkdirSync(resourcesDir, { recursive: true });
 
-  // Generate ICNS
+  if (mode === '--inline-only') {
+    // Inject logo as base64 into the already-built settings HTML
+    console.log('Inlining logo into built settings HTML...');
+    const logoPng = fs.readFileSync(path.join(resourcesDir, 'logo.png'));
+    const logoB64 = `data:image/png;base64,${logoPng.toString('base64')}`;
+    const builtHtml = path.join(projectRoot, 'out/renderer/settings/index.html');
+    let html = fs.readFileSync(builtHtml, 'utf8');
+    html = html.replace('__LOGO_BASE64__', logoB64);
+    fs.writeFileSync(builtHtml, html);
+    console.log('  Done.');
+    return;
+  }
+
+  // Generate ICNS — logo centered with padding on dark rounded-rect background
   console.log('Generating build/icon.icns...');
+  const sourcePng = path.join(buildDir, 'icon-source.png');
+  const sourceImg = await loadImage(sourcePng);
+
+  function drawIconWithPadding(size) {
+    const canvas = createCanvas(size, size);
+    const ctx = canvas.getContext('2d');
+
+    // White background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+
+    // Logo scaled to 60% of canvas, centered
+    const scale = 0.70;
+    const logoW = size * scale;
+    const logoH = logoW * (sourceImg.height / sourceImg.width);
+    const x = (size - logoW) / 2;
+    const y = (size - logoH) / 2;
+    ctx.drawImage(sourceImg, x, y, logoW, logoH);
+    return canvas;
+  }
+
   const pngBuffers = ICNS_SIZES.map(({ size, ostype }) => {
-    const canvas = drawAppIcon(size);
-    const png = canvas.toBuffer('image/png');
+    const png = drawIconWithPadding(size).toBuffer('image/png');
     return { ostype, png };
   });
   const icnsData = buildIcns(pngBuffers);
   fs.writeFileSync(path.join(buildDir, 'icon.icns'), icnsData);
   console.log(`  Written ${icnsData.length} bytes`);
+
+  // Generate DMG background (540x380, dark with centered logo)
+  console.log('Generating build/dmg-background.png...');
+  const dmgW = 540, dmgH = 380;
+  const dmgCanvas = createCanvas(dmgW, dmgH);
+  const dmgCtx = dmgCanvas.getContext('2d');
+  dmgCtx.fillStyle = '#1a1a2e';
+  dmgCtx.fillRect(0, 0, dmgW, dmgH);
+  const logoSize = 120;
+  const logoX = (dmgW / 2) - logoSize / 2;
+  const logoY = 60;
+  dmgCtx.drawImage(sourceImg, logoX, logoY, logoSize, logoSize);
+  dmgCtx.fillStyle = 'rgba(255,255,255,0.7)';
+  dmgCtx.font = 'bold 22px -apple-system, sans-serif';
+  dmgCtx.textAlign = 'center';
+  dmgCtx.fillText('WhisprAtHome', dmgW / 2, logoY + logoSize + 28);
+  dmgCtx.fillStyle = 'rgba(255,255,255,0.3)';
+  dmgCtx.font = '13px -apple-system, sans-serif';
+  dmgCtx.fillText('Drag to Applications to install', dmgW / 2, logoY + logoSize + 52);
+  fs.writeFileSync(path.join(buildDir, 'dmg-background.png'), dmgCanvas.toBuffer('image/png'));
+  console.log('  Written dmg-background.png');
 
   // Generate tray icons
   const trayIcons = [
@@ -229,6 +286,16 @@ async function main() {
     fs.writeFileSync(path.join(resourcesDir, name), png);
     console.log(`  Written ${png.length} bytes`);
   }
+
+  // Inject logo into built settings HTML as base64 to avoid asar path issues
+  console.log('Inlining logo into built settings HTML...');
+  const logoPng = fs.readFileSync(path.join(resourcesDir, 'logo.png'));
+  const logoB64 = `data:image/png;base64,${logoPng.toString('base64')}`;
+  const builtHtml = path.join(projectRoot, 'out/renderer/settings/index.html');
+  let html = fs.readFileSync(builtHtml, 'utf8');
+  html = html.replace('__LOGO_BASE64__', logoB64);
+  fs.writeFileSync(builtHtml, html);
+  console.log('  Done.');
 
   console.log('\nDone! All icon assets generated.');
 }

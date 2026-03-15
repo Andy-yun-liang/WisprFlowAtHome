@@ -2,14 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WhisprAtHome Settings</title>
+  <title>WhisprAtHome</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     html, body {
       width: 100%;
@@ -31,7 +26,7 @@
 
     /* ── Sidebar ── */
     .sidebar {
-      width: 200px;
+      width: 188px;
       flex-shrink: 0;
       background: #1a1a1a;
       display: flex;
@@ -47,30 +42,30 @@
       padding: 8px 12px;
       border-radius: 6px;
       cursor: pointer;
-      color: #c0c0c0;
+      color: #999;
       font-size: 13px;
       font-weight: 500;
       user-select: none;
       transition: background 0.1s, color 0.1s;
     }
 
-    .nav-item:hover {
-      background: #2a2a2a;
-      color: #e0e0e0;
-    }
+    .nav-item:hover { background: #242424; color: #ddd; }
 
-    .nav-item.active {
-      background: #2563eb;
-      color: #fff;
-    }
+    .nav-item.active { background: #2563eb; color: #fff; }
+    .nav-item.active .nav-icon svg { stroke: #fff; }
+    .nav-item:not(.active) .nav-icon svg { stroke: #999; }
+    .nav-item:not(.active):hover .nav-icon svg { stroke: #ddd; }
 
     .nav-icon {
-      font-size: 15px;
-      width: 20px;
-      text-align: center;
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    /* ── Content area ── */
+    /* ── Content ── */
     .content {
       flex: 1;
       background: #242424;
@@ -84,22 +79,18 @@
       gap: 20px;
     }
 
-    .section.active {
-      display: flex;
-    }
+    .section.active { display: flex; }
 
     .section-heading {
       font-size: 18px;
       font-weight: 700;
       color: #fff;
-      margin-bottom: 4px;
     }
 
-    /* ── Settings rows ── */
+    /* ── Settings groups ── */
     .settings-group {
       display: flex;
       flex-direction: column;
-      gap: 0;
       border-radius: 8px;
       overflow: hidden;
       background: #2a2a2a;
@@ -113,14 +104,18 @@
       border-bottom: 1px solid #333;
     }
 
-    .settings-row:last-child {
-      border-bottom: none;
-    }
+    .settings-row:last-child { border-bottom: none; }
 
     .row-label {
       font-size: 13px;
       color: #e0e0e0;
       font-weight: 500;
+    }
+
+    .row-sublabel {
+      font-size: 11px;
+      color: #666;
+      margin-top: 1px;
     }
 
     .row-control {
@@ -159,12 +154,9 @@
       transition: background 0.15s, color 0.15s;
     }
 
-    .segmented-btn.active {
-      background: #2563eb;
-      color: #fff;
-    }
+    .segmented-btn.active { background: #2563eb; color: #fff; }
 
-    /* ── Toggle switch ── */
+    /* ── Toggle ── */
     .toggle {
       position: relative;
       width: 36px;
@@ -172,9 +164,7 @@
       flex-shrink: 0;
     }
 
-    .toggle input {
-      display: none;
-    }
+    .toggle input { display: none; }
 
     .toggle-slider {
       position: absolute;
@@ -197,13 +187,8 @@
       transition: transform 0.2s;
     }
 
-    .toggle input:checked + .toggle-slider {
-      background: #2563eb;
-    }
-
-    .toggle input:checked + .toggle-slider::after {
-      transform: translateX(16px);
-    }
+    .toggle input:checked + .toggle-slider { background: #2563eb; }
+    .toggle input:checked + .toggle-slider::after { transform: translateX(16px); }
 
     /* ── Buttons ── */
     .btn {
@@ -216,19 +201,10 @@
       transition: opacity 0.15s;
     }
 
-    .btn:hover {
-      opacity: 0.85;
-    }
-
-    .btn-primary {
-      background: #2563eb;
-      color: #fff;
-    }
-
-    .btn-secondary {
-      background: #3a3a3a;
-      color: #e0e0e0;
-    }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-secondary { background: #3a3a3a; color: #e0e0e0; }
+    .btn-danger { background: #7f1d1d; color: #fca5a5; }
 
     /* ── Inputs ── */
     input[type="text"],
@@ -244,9 +220,7 @@
     }
 
     input[type="text"]:focus,
-    input[type="password"]:focus {
-      border-color: #2563eb;
-    }
+    input[type="password"]:focus { border-color: #2563eb; }
 
     select {
       background: #1e1e1e;
@@ -259,9 +233,7 @@
       cursor: pointer;
     }
 
-    select:focus {
-      border-color: #2563eb;
-    }
+    select:focus { border-color: #2563eb; }
 
     /* ── Status message ── */
     .status-msg {
@@ -270,9 +242,7 @@
       min-height: 14px;
     }
 
-    .status-msg.error {
-      color: #ff453a;
-    }
+    .status-msg.error { color: #ff453a; }
 
     /* ── API key row ── */
     .api-key-row {
@@ -281,42 +251,89 @@
       align-items: center;
     }
 
-    .api-key-row input {
-      width: 240px;
-    }
+    .api-key-row input { width: 220px; }
 
-    /* ── Filler word chips ── */
-    .word-grid {
+    /* ── Stats cards ── */
+    .stats-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      transition: opacity 0.2s;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
     }
 
-    .word-grid.disabled {
-      opacity: 0.4;
-      pointer-events: none;
+    .stat-card {
+      background: #2a2a2a;
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
 
-    .word-chip {
-      padding: 6px 10px;
-      border-radius: 20px;
-      border: none;
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      background: #3a3a3a;
-      color: #c0c0c0;
-      transition: background 0.15s, color 0.15s;
-      text-align: center;
-    }
-
-    .word-chip.active {
-      background: #2563eb;
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
       color: #fff;
+      line-height: 1;
     }
 
-    /* ── About section ── */
+    .stat-label {
+      font-size: 11px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── History feed ── */
+    .history-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .history-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .history-empty {
+      text-align: center;
+      color: #555;
+      font-size: 12px;
+      padding: 20px 0;
+    }
+
+    .history-item {
+      background: #2a2a2a;
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .history-text {
+      color: #e0e0e0;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .history-meta {
+      display: flex;
+      gap: 10px;
+      font-size: 11px;
+      color: #666;
+    }
+
+    /* ── About ── */
     .about-center {
       display: flex;
       flex-direction: column;
@@ -325,26 +342,10 @@
       padding-top: 20px;
     }
 
-    .about-icon {
-      width: 64px;
-      height: 64px;
-    }
-
-    .about-title {
-      font-size: 22px;
-      font-weight: 700;
-      color: #fff;
-    }
-
-    .about-version {
-      font-size: 13px;
-      color: #888;
-    }
-
-    .about-pricing {
-      font-size: 12px;
-      color: #666;
-    }
+    .about-icon { width: 80px; height: 80px; }
+    .about-title { font-size: 22px; font-weight: 700; color: #fff; }
+    .about-version { font-size: 13px; color: #888; }
+    .about-note { font-size: 12px; color: #555; text-align: center; font-style: italic; }
 
     /* ── Hotkey capture ── */
     #hotkey-capture-hint {
@@ -356,91 +357,117 @@
 </head>
 <body>
   <div class="app-layout">
+
     <!-- Sidebar -->
     <nav class="sidebar">
-      <div class="nav-item active" data-section="general">
-        <span class="nav-icon">⚙️</span>
-        <span>General</span>
+
+      <div class="nav-item active" data-section="home">
+        <span class="nav-icon">
+          <!-- Lucide: Home -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </span>
+        <span>Home</span>
       </div>
-      <div class="nav-item" data-section="transcription">
-        <span class="nav-icon">🎙️</span>
-        <span>Transcription</span>
+
+      <div class="nav-item" data-section="settings">
+        <span class="nav-icon">
+          <!-- Lucide: SlidersHorizontal -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="21" x2="14" y1="4" y2="4"/>
+            <line x1="10" x2="3" y1="4" y2="4"/>
+            <line x1="21" x2="12" y1="12" y2="12"/>
+            <line x1="8" x2="3" y1="12" y2="12"/>
+            <line x1="21" x2="16" y1="20" y2="20"/>
+            <line x1="12" x2="3" y1="20" y2="20"/>
+            <line x1="14" x2="14" y1="2" y2="6"/>
+            <line x1="8" x2="8" y1="10" y2="14"/>
+            <line x1="16" x2="16" y1="18" y2="22"/>
+          </svg>
+        </span>
+        <span>Settings</span>
       </div>
-      <div class="nav-item" data-section="text-cleanup">
-        <span class="nav-icon">✂️</span>
-        <span>Text Cleanup</span>
-      </div>
+
       <div class="nav-item" data-section="about">
-        <span class="nav-icon">ℹ️</span>
+        <span class="nav-icon">
+          <!-- Lucide: Info -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 16v-4"/>
+            <path d="M12 8h.01"/>
+          </svg>
+        </span>
         <span>About</span>
       </div>
+
     </nav>
 
     <!-- Content -->
     <main class="content">
 
-      <!-- General -->
-      <div class="section active" id="section-general">
-        <div class="section-heading">General</div>
-        <div class="settings-group">
-          <!-- PTT Hotkey -->
-          <div class="settings-row">
-            <span class="row-label">PTT Hotkey</span>
-            <div class="row-control">
-              <span class="hotkey-badge" id="hotkey-badge">Ctrl+Alt</span>
-              <button class="btn btn-secondary" id="hotkey-edit-btn">Edit</button>
-              <span id="hotkey-capture-hint">Press your hotkey…</span>
-            </div>
+      <!-- Home -->
+      <div class="section active" id="section-home">
+        <div class="section-heading">Home</div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="stat-recordings">—</div>
+            <div class="stat-label">Recordings</div>
           </div>
-          <!-- HUD Position -->
-          <div class="settings-row">
-            <span class="row-label">HUD Position</span>
-            <div class="row-control">
-              <div class="segmented">
-                <button class="segmented-btn active" data-pos="top" id="hud-pos-top">Top</button>
-                <button class="segmented-btn" data-pos="bottom" id="hud-pos-bottom">Bottom</button>
-              </div>
-            </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-words">—</div>
+            <div class="stat-label">Words Transcribed</div>
           </div>
-          <!-- Launch at Login -->
-          <div class="settings-row">
-            <span class="row-label">Launch at Login</span>
-            <div class="row-control">
-              <label class="toggle">
-                <input type="checkbox" id="autostart-toggle" />
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-wpm">—</div>
+            <div class="stat-label">Last WPM</div>
           </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-cost">—</div>
+            <div class="stat-label">Total Cost</div>
+          </div>
+        </div>
+
+        <div class="history-header">
+          <span class="history-label">Recent Transcripts</span>
+          <button class="btn btn-danger" id="reset-stats-btn">Reset all</button>
+        </div>
+
+        <div class="history-list" id="history-list">
+          <div class="history-empty">No transcripts yet</div>
         </div>
       </div>
 
-      <!-- Transcription -->
-      <div class="section" id="section-transcription">
-        <div class="section-heading">Transcription</div>
+      <!-- Settings -->
+      <div class="section" id="section-settings">
+        <div class="section-heading">Settings</div>
+
+        <!-- API -->
         <div class="settings-group">
-          <!-- API Key -->
           <div class="settings-row">
-            <span class="row-label">API Key</span>
+            <div>
+              <div class="row-label">OpenAI API Key</div>
+              <div class="row-sublabel">Used for Whisper transcription</div>
+            </div>
             <div class="row-control" style="flex-direction: column; align-items: flex-end; gap: 4px;">
               <div class="api-key-row">
-                <input type="password" id="api-key" placeholder="sk-..." autocomplete="off" />
+                <input type="password" id="api-key" placeholder="sk-…" autocomplete="off" />
                 <button class="btn btn-primary" id="save-key-btn">Save</button>
               </div>
               <div class="status-msg" id="key-status"></div>
             </div>
           </div>
-          <!-- Whisper Model -->
           <div class="settings-row">
-            <span class="row-label">Model</span>
+            <span class="row-label">Whisper Model</span>
             <div class="row-control">
               <select id="model-select">
                 <option value="whisper-1">whisper-1 (default)</option>
-                <option value="whisper-large-v3-turbo">whisper-large-v3-turbo (faster)</option>
+                <option value="whisper-large-v3-turbo">large-v3-turbo (faster)</option>
               </select>
             </div>
           </div>
-          <!-- Language -->
           <div class="settings-row">
             <span class="row-label">Language</span>
             <div class="row-control">
@@ -457,15 +484,44 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Text Cleanup -->
-      <div class="section" id="section-text-cleanup">
-        <div class="section-heading">Text Cleanup</div>
+        <!-- General -->
         <div class="settings-group">
-          <!-- Master toggle -->
           <div class="settings-row">
-            <span class="row-label">Remove filler words</span>
+            <span class="row-label">PTT Hotkey</span>
+            <div class="row-control">
+              <span class="hotkey-badge" id="hotkey-badge">Ctrl+Alt</span>
+              <button class="btn btn-secondary" id="hotkey-edit-btn">Edit</button>
+              <span id="hotkey-capture-hint">Press your hotkey…</span>
+            </div>
+          </div>
+          <div class="settings-row">
+            <span class="row-label">HUD Position</span>
+            <div class="row-control">
+              <div class="segmented">
+                <button class="segmented-btn active" data-pos="top" id="hud-pos-top">Top</button>
+                <button class="segmented-btn" data-pos="bottom" id="hud-pos-bottom">Bottom</button>
+              </div>
+            </div>
+          </div>
+          <div class="settings-row">
+            <span class="row-label">Launch at Login</span>
+            <div class="row-control">
+              <label class="toggle">
+                <input type="checkbox" id="autostart-toggle" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Text cleanup -->
+        <div class="settings-group">
+          <div class="settings-row">
+            <div>
+              <div class="row-label">Remove filler words</div>
+              <div class="row-sublabel">Strip "um", "uh", "like", etc. from transcripts</div>
+            </div>
             <div class="row-control">
               <label class="toggle">
                 <input type="checkbox" id="filler-toggle" />
@@ -474,21 +530,18 @@
             </div>
           </div>
         </div>
-        <!-- Word chips -->
-        <div class="word-grid" id="word-grid">
-          <!-- chips injected by settings.ts -->
-        </div>
+
       </div>
 
       <!-- About -->
       <div class="section" id="section-about">
         <div class="section-heading">About</div>
         <div class="about-center">
-          <img class="about-icon" src="../../resources/tray-idle.png" alt="App icon" />
+          <img class="about-icon" src="__LOGO_BASE64__" alt="App icon" />
           <div class="about-title">WhisprAtHome</div>
           <div class="about-version">Version 1.0.0</div>
-          <div class="about-pricing">Whisper API pricing: $0.006 / min</div>
-          <button class="btn btn-secondary" id="check-updates-btn">Check for updates</button>
+          <div class="about-note">Whisper API · $0.006 / min</div>
+          <div class="about-note" style="margin-top: 8px;">Vibe coded by Andy with the Ralph Wiggum loop approach.<br>Needed a WhisprFlow replacement.</div>
         </div>
       </div>
 

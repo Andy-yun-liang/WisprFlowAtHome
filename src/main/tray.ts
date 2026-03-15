@@ -1,17 +1,14 @@
 import { Tray, Menu, nativeImage, app } from 'electron'
-import { join } from 'path'
 import type { AppState } from '@shared/types'
 import { openSettingsWindow } from './settings-window'
 
 let tray: Tray | null = null
 
-function getIconPath(state: AppState): string {
-  const name = state === 'recording' ? 'tray-recording' :
-               state === 'processing' ? 'tray-processing' :
-               state === 'error' ? 'tray-error' :
-               'tray-idle'
-
-  return join(__dirname, '../../resources', `${name}.png`)
+const STATE_TITLE: Record<AppState, string> = {
+  idle:       '🎙',
+  recording:  '🔴',
+  processing: '🟡',
+  error:      '⚠️'
 }
 
 function buildContextMenu(): Electron.Menu {
@@ -23,12 +20,12 @@ function buildContextMenu(): Electron.Menu {
 }
 
 export function createTray(): Tray {
-  const icon = nativeImage.createFromPath(getIconPath('idle'))
-  tray = new Tray(icon)
+  // Use an empty image — icon is shown as text via setTitle()
+  tray = new Tray(nativeImage.createEmpty())
+  tray.setTitle(STATE_TITLE['idle'])
   tray.setToolTip('WhisprAtHome')
   tray.setContextMenu(buildContextMenu())
 
-  // Single click on macOS also shows menu
   tray.on('click', () => {
     tray?.popUpContextMenu()
   })
@@ -38,8 +35,7 @@ export function createTray(): Tray {
 
 export function setTrayState(state: AppState): void {
   if (!tray) return
-  const icon = nativeImage.createFromPath(getIconPath(state))
-  tray.setImage(icon)
+  tray.setTitle(STATE_TITLE[state])
 
   const tooltip =
     state === 'recording' ? 'WhisprAtHome — Recording…' :

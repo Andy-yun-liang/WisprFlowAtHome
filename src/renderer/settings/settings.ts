@@ -1,4 +1,4 @@
-import type { Settings } from '../../shared/types'
+import type { Settings, UsageStats, TranscriptEntry } from '../../shared/types'
 import { FILLER_WORDS } from '../../shared/constants'
 
 declare global {
@@ -10,6 +10,9 @@ declare global {
       setApiKey: (apiKey: string) => Promise<void>
       rebindHotkey: (hotkey: string) => Promise<void>
       setLoginItem: (enable: boolean) => Promise<void>
+      getStats: () => Promise<UsageStats>
+      resetStats: () => Promise<void>
+      getHistory: () => Promise<TranscriptEntry[]>
     }
   }
 }
@@ -20,108 +23,80 @@ const navItems = document.querySelectorAll<HTMLElement>('.nav-item')
 const sections = document.querySelectorAll<HTMLElement>('.section')
 
 function switchSection(sectionId: string): void {
-  navItems.forEach(item => {
-    item.classList.toggle('active', item.dataset.section === sectionId)
-  })
-  sections.forEach(sec => {
-    sec.classList.toggle('active', sec.id === `section-${sectionId}`)
-  })
+  navItems.forEach(item => item.classList.toggle('active', item.dataset.section === sectionId))
+  sections.forEach(sec => sec.classList.toggle('active', sec.id === `section-${sectionId}`))
 }
 
 navItems.forEach(item => {
   item.addEventListener('click', () => {
     const id = item.dataset.section
     if (id) switchSection(id)
+    if (id === 'home') refreshHome()
   })
 })
 
-// ── General section ───────────────────────────────────────────────────────────
+// ── Home section ──────────────────────────────────────────────────────────────
 
-const hotKeyBadge = document.getElementById('hotkey-badge')!
-const hotkeyEditBtn = document.getElementById('hotkey-edit-btn') as HTMLButtonElement
-const hotkeyCaptureHint = document.getElementById('hotkey-capture-hint')!
+const statRecordings = document.getElementById('stat-recordings')!
+const statWords = document.getElementById('stat-words')!
+const statWpm = document.getElementById('stat-wpm')!
+const statCost = document.getElementById('stat-cost')!
+const historyList = document.getElementById('history-list')!
+const resetStatsBtn = document.getElementById('reset-stats-btn') as HTMLButtonElement
 
-const hudPosTop = document.getElementById('hud-pos-top') as HTMLButtonElement
-const hudPosBottom = document.getElementById('hud-pos-bottom') as HTMLButtonElement
-
-const autostartToggle = document.getElementById('autostart-toggle') as HTMLInputElement
-
-// Hotkey capture
-let capturingHotkey = false
-
-hotkeyEditBtn.addEventListener('click', () => {
-  if (capturingHotkey) {
-    // Cancel capture
-    capturingHotkey = false
-    hotkeyEditBtn.textContent = 'Edit'
-    hotkeyCaptureHint.style.display = 'none'
-    return
-  }
-  capturingHotkey = true
-  hotkeyEditBtn.textContent = 'Cancel'
-  hotkeyCaptureHint.style.display = 'inline'
-})
-
-window.addEventListener('keydown', async (e) => {
-  if (!capturingHotkey) return
-
-  if (e.key === 'Escape') {
-    capturingHotkey = false
-    hotkeyEditBtn.textContent = 'Edit'
-    hotkeyCaptureHint.style.display = 'none'
-    return
-  }
-
-  // Build modifier combo string
-  const parts: string[] = []
-  if (e.ctrlKey) parts.push('Ctrl')
-  if (e.altKey) parts.push('Alt')
-  if (e.shiftKey) parts.push('Shift')
-  if (e.metaKey) parts.push('Meta')
-
-  if (parts.length === 0) return  // require at least one modifier
-
-  const hotkey = parts.join('+')
-  e.preventDefault()
-
-  capturingHotkey = false
-  hotkeyEditBtn.textContent = 'Edit'
-  hotkeyCaptureHint.style.display = 'none'
-  hotKeyBadge.textContent = hotkey
-
-  try {
-    await window.settingsApi.rebindHotkey(hotkey)
-  } catch (err) {
-    console.error('Failed to rebind hotkey:', err)
-  }
-})
-
-function setHudPosition(pos: 'top' | 'bottom'): void {
-  hudPosTop.classList.toggle('active', pos === 'top')
-  hudPosBottom.classList.toggle('active', pos === 'bottom')
+function renderStats(s: UsageStats): void {
+  statRecordings.textContent = s.totalRecordings.toLocaleString()
+  statWords.textContent = s.totalWords.toLocaleString()
+  statWpm.textContent = s.lastWpm > 0 ? String(s.lastWpm) : '—'
+  statCost.textContent = `$${s.totalCostUsd.toFixed(4)}`
 }
 
-hudPosTop.addEventListener('click', async () => {
-  setHudPosition('top')
-  await window.settingsApi.setSetting('hudPosition', 'top')
+function renderHistory(entries: TranscriptEntry[]): void {
+  if (entries.length === 0) {
+    historyList.innerHTML = '<div class="history-empty">No transcripts yet</div>'
+    return
+  }
+  historyList.innerHTML = entries.map(e => {
+    const d = new Date(e.timestamp)
+    const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    const date = d.toLocaleDateString([], { month: 'short', day: 'numeric' })
+    return `
+      <div class="history-item">
+        <div class="history-text">${escHtml(e.text)}</div>
+        <div class="history-meta">
+          <span>${date} ${time}</span>
+          <span>${e.wordCount} words</span>
+          ${e.wpm > 0 ? `<span>${e.wpm} WPM</span>` : ''}
+        </div>
+      </div>`
+  }).join('')
+}
+
+function escHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+async function refreshHome(): Promise<void> {
+  const [stats, history] = await Promise.all([
+    window.settingsApi.getStats(),
+    window.settingsApi.getHistory()
+  ])
+  renderStats(stats)
+  renderHistory(history)
+}
+
+resetStatsBtn.addEventListener('click', async () => {
+  await window.settingsApi.resetStats()
+  renderStats({ totalRecordings: 0, totalWords: 0, totalDurationSecs: 0, totalCostUsd: 0, lastWpm: 0 })
+  renderHistory([])
 })
 
-hudPosBottom.addEventListener('click', async () => {
-  setHudPosition('bottom')
-  await window.settingsApi.setSetting('hudPosition', 'bottom')
-})
+// ── Settings section ──────────────────────────────────────────────────────────
 
-autostartToggle.addEventListener('change', async () => {
-  await window.settingsApi.setLoginItem(autostartToggle.checked)
-})
-
-// ── Transcription section ─────────────────────────────────────────────────────
-
+// API Key
 const apiKeyInput = document.getElementById('api-key') as HTMLInputElement
 const saveKeyBtn = document.getElementById('save-key-btn') as HTMLButtonElement
 const keyStatus = document.getElementById('key-status')!
-const modelSelect = document.getElementById('model-select') as HTMLSelectElement
-const languageSelect = document.getElementById('language-select') as HTMLSelectElement
 
 function showStatus(el: HTMLElement, msg: string, isError = false): void {
   el.textContent = msg
@@ -152,55 +127,85 @@ saveKeyBtn.addEventListener('click', async () => {
   }
 })
 
+const modelSelect = document.getElementById('model-select') as HTMLSelectElement
 modelSelect.addEventListener('change', async () => {
-  const val = modelSelect.value as Settings['whisperModel']
-  await window.settingsApi.setSetting('whisperModel', val)
+  await window.settingsApi.setSetting('whisperModel', modelSelect.value as Settings['whisperModel'])
 })
 
+const languageSelect = document.getElementById('language-select') as HTMLSelectElement
 languageSelect.addEventListener('change', async () => {
   await window.settingsApi.setSetting('language', languageSelect.value)
 })
 
-// ── Text Cleanup section ──────────────────────────────────────────────────────
+// Hotkey
+const hotKeyBadge = document.getElementById('hotkey-badge')!
+const hotkeyEditBtn = document.getElementById('hotkey-edit-btn') as HTMLButtonElement
+const hotkeyCaptureHint = document.getElementById('hotkey-capture-hint')!
 
-const fillerToggle = document.getElementById('filler-toggle') as HTMLInputElement
-const wordGrid = document.getElementById('word-grid')!
+let capturingHotkey = false
 
-let enabledWords: string[] = []
-
-function renderWordGrid(): void {
-  wordGrid.innerHTML = ''
-  for (const word of FILLER_WORDS) {
-    const chip = document.createElement('button')
-    chip.className = 'word-chip' + (enabledWords.includes(word) ? ' active' : '')
-    chip.textContent = word
-    chip.addEventListener('click', async () => {
-      if (enabledWords.includes(word)) {
-        enabledWords = enabledWords.filter(w => w !== word)
-      } else {
-        enabledWords = [...enabledWords, word]
-      }
-      chip.classList.toggle('active', enabledWords.includes(word))
-      await window.settingsApi.setSetting('enabledFillerWords', enabledWords)
-    })
-    wordGrid.appendChild(chip)
-  }
-}
-
-function updateWordGridState(): void {
-  wordGrid.classList.toggle('disabled', !fillerToggle.checked)
-}
-
-fillerToggle.addEventListener('change', async () => {
-  await window.settingsApi.setSetting('fillerWordRemoval', fillerToggle.checked)
-  updateWordGridState()
+hotkeyEditBtn.addEventListener('click', () => {
+  capturingHotkey = !capturingHotkey
+  hotkeyEditBtn.textContent = capturingHotkey ? 'Cancel' : 'Edit'
+  hotkeyCaptureHint.style.display = capturingHotkey ? 'inline' : 'none'
 })
 
-// ── About section ─────────────────────────────────────────────────────────────
+window.addEventListener('keydown', async (e) => {
+  if (!capturingHotkey) return
+  if (e.key === 'Escape') {
+    capturingHotkey = false
+    hotkeyEditBtn.textContent = 'Edit'
+    hotkeyCaptureHint.style.display = 'none'
+    return
+  }
+  const parts: string[] = []
+  if (e.ctrlKey) parts.push('Ctrl')
+  if (e.altKey) parts.push('Alt')
+  if (e.shiftKey) parts.push('Shift')
+  if (e.metaKey) parts.push('Meta')
+  if (parts.length === 0) return
+  const hotkey = parts.join('+')
+  e.preventDefault()
+  capturingHotkey = false
+  hotkeyEditBtn.textContent = 'Edit'
+  hotkeyCaptureHint.style.display = 'none'
+  hotKeyBadge.textContent = hotkey
+  try {
+    await window.settingsApi.rebindHotkey(hotkey)
+  } catch (err) {
+    console.error('Failed to rebind hotkey:', err)
+  }
+})
 
-const checkUpdatesBtn = document.getElementById('check-updates-btn') as HTMLButtonElement
-checkUpdatesBtn.addEventListener('click', () => {
-  console.log('Check for updates clicked')
+// HUD position
+const hudPosTop = document.getElementById('hud-pos-top') as HTMLButtonElement
+const hudPosBottom = document.getElementById('hud-pos-bottom') as HTMLButtonElement
+
+function setHudPosition(pos: 'top' | 'bottom'): void {
+  hudPosTop.classList.toggle('active', pos === 'top')
+  hudPosBottom.classList.toggle('active', pos === 'bottom')
+}
+
+hudPosTop.addEventListener('click', async () => {
+  setHudPosition('top')
+  await window.settingsApi.setSetting('hudPosition', 'top')
+})
+
+hudPosBottom.addEventListener('click', async () => {
+  setHudPosition('bottom')
+  await window.settingsApi.setSetting('hudPosition', 'bottom')
+})
+
+// Autostart
+const autostartToggle = document.getElementById('autostart-toggle') as HTMLInputElement
+autostartToggle.addEventListener('change', async () => {
+  await window.settingsApi.setLoginItem(autostartToggle.checked)
+})
+
+// Filler words
+const fillerToggle = document.getElementById('filler-toggle') as HTMLInputElement
+fillerToggle.addEventListener('change', async () => {
+  await window.settingsApi.setSetting('fillerWordRemoval', fillerToggle.checked)
 })
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -211,12 +216,10 @@ async function loadSettings(): Promise<void> {
     window.settingsApi.getApiKey()
   ])
 
-  // General
   hotKeyBadge.textContent = settings.hotkey
   setHudPosition(settings.hudPosition)
   autostartToggle.checked = settings.autoStart
 
-  // Transcription
   if (apiKey) {
     apiKeyInput.value = '●'.repeat(20)
     apiKeyInput.dataset.hasKey = 'true'
@@ -224,11 +227,8 @@ async function loadSettings(): Promise<void> {
   modelSelect.value = settings.whisperModel
   languageSelect.value = settings.language
 
-  // Text Cleanup
   fillerToggle.checked = settings.fillerWordRemoval
-  enabledWords = settings.enabledFillerWords ? [...settings.enabledFillerWords] : [...FILLER_WORDS]
-  renderWordGrid()
-  updateWordGridState()
 }
 
 loadSettings()
+refreshHome()

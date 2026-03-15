@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WhisprAtHome HUD</title>
   <style>
     * {
@@ -26,12 +25,12 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      opacity: 0;
+      opacity: 1;
       transition: opacity 0.2s ease;
     }
 
-    #hud.visible {
-      opacity: 1;
+    #hud.hidden {
+      opacity: 0;
     }
 
     .pill {
@@ -109,17 +108,20 @@
       to { transform: rotate(360deg); }
     }
 
+    #transcript-wrap {
+      flex: 1;
+      display: none;
+    }
+
+    #transcript-wrap.visible {
+      display: block;
+    }
+
     #transcript {
       color: rgba(255,255,255,0.92);
       font-size: 13px;
       line-height: 1.4;
-      flex: 1;
-      display: none;
       word-break: break-word;
-    }
-
-    #transcript.visible {
-      display: block;
     }
 
     #error-msg {
@@ -135,14 +137,16 @@
   </style>
 </head>
 <body>
-  <div id="hud">
+  <div id="hud" class="hidden">
     <div class="pill">
       <div class="indicator" id="indicator"></div>
       <div id="canvas-container">
         <canvas id="waveform"></canvas>
       </div>
       <div class="spinner" id="spinner"></div>
-      <div id="transcript"></div>
+      <div id="transcript-wrap">
+        <div id="transcript"></div>
+      </div>
       <div id="error-msg"></div>
     </div>
   </div>

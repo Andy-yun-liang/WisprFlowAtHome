@@ -15,10 +15,18 @@ contextBridge.exposeInMainWorld('hudApi', {
   onTranscriptError: (cb: (message: string) => void) => {
     ipcRenderer.on(IPC.TRANSCRIPT_ERROR, (_event, message: string) => cb(message))
   },
+  onShow: (cb: () => void) => {
+    ipcRenderer.on('hud:show', () => cb())
+  },
+  onHide: (cb: () => void) => {
+    ipcRenderer.on('hud:hide', () => cb())
+  },
   removeAllListeners: () => {
     ipcRenderer.removeAllListeners(IPC.APP_STATE_CHANGED)
     ipcRenderer.removeAllListeners(IPC.AUDIO_CHUNK)
     ipcRenderer.removeAllListeners(IPC.TRANSCRIPT_READY)
     ipcRenderer.removeAllListeners(IPC.TRANSCRIPT_ERROR)
+    ipcRenderer.removeAllListeners('hud:show')
+    ipcRenderer.removeAllListeners('hud:hide')
   }
 })

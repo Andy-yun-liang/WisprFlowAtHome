@@ -1,6 +1,6 @@
 import { app, BrowserWindow, systemPreferences } from 'electron'
 import { createTray, setTrayState } from './tray'
-import { createHudWindow, showHud, hideHud, getHudWindow } from './hud-window'
+import { createHudWindow, showHud, hideHud, getHudWindow, onHudReady, sendToHud } from './hud-window'
 import { startHotkeyListener } from './hotkey'
 import { createAudioRecorder } from './audio-recorder'
 import { transcribeAudio } from './whisper-client'
@@ -8,11 +8,18 @@ import { initWhisperClient } from './whisper-client'
 import { cleanTranscript } from './text-cleaner'
 import { pasteText, checkAccessibilityPermission } from './paste-service'
 import { getSettings } from './config-store'
+import { recordTranscription } from './stats-store'
 import { getApiKey } from './keychain'
 import { registerIpcHandlers } from './ipc-handlers'
+import { openSettingsWindow } from './settings-window'
 import { IPC } from '@shared/types'
 import type { AppState } from '@shared/types'
 import { HUD_DISMISS_DELAY_MS } from '@shared/constants'
+
+// Hide dock icon before app is ready (most reliable way on macOS)
+if (process.platform === 'darwin') {
+  app.dock.hide()
+}
 
 // Prevent multiple instances
 const gotLock = app.requestSingleInstanceLock()
@@ -25,15 +32,12 @@ let tray: Electron.Tray | null = null
 
 let currentState: AppState = 'idle'
 let activeRecorder: ReturnType<typeof createAudioRecorder> | null = null
+let recordingStartTime = 0
 
 function setState(state: AppState, errorMessage?: string): void {
   currentState = state
   setTrayState(state)
-
-  const hud = getHudWindow()
-  if (hud && !hud.isDestroyed()) {
-    hud.webContents.send(IPC.APP_STATE_CHANGED, { state, errorMessage })
-  }
+  sendToHud(IPC.APP_STATE_CHANGED, { state, errorMessage })
 }
 
 async function onPttPress(): Promise<void> {
@@ -53,21 +57,17 @@ async function onPttPress(): Promise<void> {
 
   initWhisperClient(apiKey)
 
+  recordingStartTime = Date.now()
   setState('recording')
   showHud()
 
   activeRecorder = createAudioRecorder((chunk: Buffer) => {
-    // Forward audio chunks to HUD for waveform visualization
-    const hud = getHudWindow()
-    if (hud && !hud.isDestroyed()) {
-      // Convert Buffer to Float32Array for waveform rendering
-      const int16 = new Int16Array(chunk.buffer, chunk.byteOffset, chunk.length / 2)
-      const float32 = new Float32Array(int16.length)
-      for (let i = 0; i < int16.length; i++) {
-        float32[i] = int16[i] / 32768
-      }
-      hud.webContents.send(IPC.AUDIO_CHUNK, Array.from(float32))
+    const int16 = new Int16Array(chunk.buffer, chunk.byteOffset, chunk.length / 2)
+    const float32 = new Float32Array(int16.length)
+    for (let i = 0; i < int16.length; i++) {
+      float32[i] = int16[i] / 32768
     }
+    sendToHud(IPC.AUDIO_CHUNK, Array.from(float32))
   })
 
   activeRecorder.start()
@@ -90,9 +90,11 @@ async function onPttRelease(): Promise<void> {
   }
 
   if (pcm.length < 1000) {
-    // Too short — likely accidental press
-    setState('idle')
-    hideHud()
+    // Too short — either accidental press or mic permission denied
+    console.error(`[Main] PCM buffer too small: ${pcm.length} bytes — mic permission may be denied`)
+    setState('error', `No audio captured (${pcm.length} bytes). Check Microphone permission in System Settings.`)
+    showHud()
+    setTimeout(() => { setState('idle'); hideHud() }, 4000)
     return
   }
 
@@ -112,24 +114,25 @@ async function onPttRelease(): Promise<void> {
     const settings = getSettings()
     const text = settings.fillerWordRemoval ? cleanTranscript(raw) : raw.trim()
 
-    // Send transcript to HUD
-    const hud = getHudWindow()
-    if (hud && !hud.isDestroyed()) {
-      hud.webContents.send(IPC.TRANSCRIPT_READY, { text, raw })
-    }
+    const durationSecs = (Date.now() - recordingStartTime) / 1000
+    const wordCount = text.trim().split(/\s+/).filter(Boolean).length
+    const wpm = durationSecs > 0 ? Math.round((wordCount / durationSecs) * 60) : 0
+    // Whisper pricing: $0.006 per minute
+    const costUsd = (durationSecs / 60) * 0.006
 
-    // Paste
+    recordTranscription(text, wordCount, wpm, durationSecs)
+    console.log(`[Transcript] "${text}"`)
+    console.log(`[Stats] ${wordCount} words | ${wpm} WPM | ${durationSecs.toFixed(1)}s | $${costUsd.toFixed(4)}`)
+
+    sendToHud(IPC.TRANSCRIPT_READY, { text, raw, wordCount, wpm, durationSecs })
+
     const { pasted } = await pasteText(text)
 
     if (!pasted) {
-      // Text is in clipboard, but paste sim failed — show warning in HUD
-      const hud2 = getHudWindow()
-      if (hud2 && !hud2.isDestroyed()) {
-        hud2.webContents.send(IPC.APP_STATE_CHANGED, {
-          state: 'error',
-          errorMessage: 'Paste failed — text copied to clipboard'
-        })
-      }
+      sendToHud(IPC.APP_STATE_CHANGED, {
+        state: 'error',
+        errorMessage: 'Paste failed — text copied to clipboard'
+      })
     }
 
     setState('idle')
@@ -138,10 +141,7 @@ async function onPttRelease(): Promise<void> {
     console.error('[Main] transcription error:', err)
     const msg = err instanceof Error ? err.message : String(err)
     setState('error', `Transcription failed: ${msg}`)
-    const hud = getHudWindow()
-    if (hud && !hud.isDestroyed()) {
-      hud.webContents.send(IPC.TRANSCRIPT_ERROR, msg)
-    }
+    sendToHud(IPC.TRANSCRIPT_ERROR, msg)
     setTimeout(() => { setState('idle'); hideHud() }, 4000)
   }
 }
@@ -186,6 +186,11 @@ app.on('ready', async () => {
       await onPttRelease()
     }
   })
+
+  // Always open Settings on launch so users know the app is running
+  const apiKey = await getApiKey()
+  console.log('[Main] Startup API key check:', apiKey ? `found (${apiKey.length} chars)` : 'not found')
+  openSettingsWindow()
 
   console.log('[Main] WhisprAtHome ready. PTT hotkey:', settings.hotkey)
 })

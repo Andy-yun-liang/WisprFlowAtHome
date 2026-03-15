@@ -7,6 +7,8 @@ declare global {
       onAudioChunk: (cb: (samples: number[]) => void) => void
       onTranscriptReady: (cb: (payload: TranscriptReadyPayload) => void) => void
       onTranscriptError: (cb: (message: string) => void) => void
+      onShow: (cb: () => void) => void
+      onHide: (cb: () => void) => void
       removeAllListeners: () => void
     }
   }
@@ -18,6 +20,7 @@ const indicator = document.getElementById('indicator')!
 const canvasContainer = document.getElementById('canvas-container')!
 const canvas = document.getElementById('waveform') as HTMLCanvasElement
 const spinner = document.getElementById('spinner')!
+const transcriptWrap = document.getElementById('transcript-wrap')!
 const transcriptEl = document.getElementById('transcript')!
 const errorEl = document.getElementById('error-msg')!
 
@@ -72,7 +75,7 @@ function setMode(mode: 'recording' | 'processing' | 'transcript' | 'error' | 'id
 
   canvasContainer.className = 'canvas-container' + (mode === 'recording' ? ' visible' : '')
   spinner.className = 'spinner' + (mode === 'processing' ? ' visible' : '')
-  transcriptEl.className = mode === 'transcript' ? 'visible' : ''
+  transcriptWrap.className = 'transcript-wrap' + (mode === 'transcript' ? ' visible' : '')
   errorEl.className = mode === 'error' ? 'visible' : ''
 
   if (mode === 'recording') {
@@ -95,19 +98,25 @@ function hide(): void {
 }
 
 // --- IPC ---
+window.hudApi.onShow(() => { hud.classList.remove('hidden') })
+window.hudApi.onHide(() => {
+  hud.classList.add('hidden')
+  setMode('idle')
+  transcriptEl.textContent = ''
+  errorEl.textContent = ''
+  rmsHistory.fill(0)
+})
+
 window.hudApi.onStateChanged((payload) => {
   const { state, errorMessage } = payload
 
   if (state === 'recording') {
-    show()
     setMode('recording')
   } else if (state === 'processing') {
     setMode('processing')
   } else if (state === 'error') {
     setMode('error')
     errorEl.textContent = errorMessage ?? 'An error occurred'
-  } else if (state === 'idle') {
-    hide()
   }
 })
 

@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../shared/types'
-import type { Settings } from '../shared/types'
+import type { Settings, UsageStats, TranscriptEntry } from '../shared/types'
 
 contextBridge.exposeInMainWorld('settingsApi', {
   getSettings: (): Promise<Settings> =>
@@ -19,5 +19,14 @@ contextBridge.exposeInMainWorld('settingsApi', {
     ipcRenderer.invoke(IPC.HOTKEY_REBIND, hotkey),
 
   setLoginItem: (enable: boolean): Promise<void> =>
-    ipcRenderer.invoke(IPC.SET_LOGIN_ITEM, enable)
+    ipcRenderer.invoke(IPC.SET_LOGIN_ITEM, enable),
+
+  getStats: (): Promise<UsageStats> =>
+    ipcRenderer.invoke(IPC.STATS_GET),
+
+  resetStats: (): Promise<void> =>
+    ipcRenderer.invoke(IPC.STATS_RESET),
+
+  getHistory: (): Promise<TranscriptEntry[]> =>
+    ipcRenderer.invoke(IPC.HISTORY_GET)
 })

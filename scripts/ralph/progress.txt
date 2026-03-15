@@ -1,5 +1,13 @@
 ## Codebase Patterns
-- ICNS binary format: 8-byte file header ('icns' + total size), then entries of 8 bytes (4-byte OSType + 4-byte entry size including header) + raw PNG data; OSType codes: icp4=16, icp5=32, icp6=64, ic07=128, ic08=256, ic09=512
+- ICNS binary format: 8-byte file header ('icns' + total size), then entries of 8 bytes (4-byte OSType + 4-byte entry size including header) + raw PNG data; OSType codes: icp4=16, icp5=32, icp6=64, ic07=128, ic08=256, ic09=512, ic10=1024 (required for Retina dock/Finder — do NOT omit)
+- SoX is bundled in resources/sox-bundle/ via scripts/bundle-sox.mjs (copies binary + all dylibs, rewrites install names to @loader_path-relative). Regenerated on every prebuild. Do NOT commit sox-bundle to git.
+- audio-recorder.ts: resolves bundled sox via `process.resourcesPath` when packaged (`app.isPackaged`), falls back to system sox in dev
+- electron-builder extraResources copies resources/sox-bundle → Contents/Resources/sox-bundle at package time
+- node-record-lpcm16 CANNOT be used to specify a custom sox path — it hardcodes `cmd = 'sox'` in sox.js regardless of the `recorder` option. Always use direct child_process.spawn instead.
+- API keys: stored exclusively in macOS Keychain via keytar (src/main/keychain.ts). Never written to disk, never in env files. Safe to commit all source files.
+- Stats + transcript history: src/main/stats-store.ts persists to ~/Library/Application Support/WhisprAtHome/stats.json via electron-store. recordTranscription(text, wordCount, wpm, durationSecs) — text is the first arg.
+- Settings UI: pure HTML/CSS/TS (no React/Vue). Icons are inlined Lucide SVG paths (no npm package needed). Nav: Home (stats+history), Settings (all config), About.
+- Logo base64 injection: postbuild script inlines resources/logo.png as base64 data URI into out/renderer/settings/index.html to avoid asar path resolution issues
 - canvas package (node-canvas) is installed as devDependency for icon generation; uses `createCanvas` from 'canvas'
 - prebuild script runs before `npm run build` automatically via npm lifecycle hooks
 - This is an Electron + TypeScript app using electron-vite for bundling

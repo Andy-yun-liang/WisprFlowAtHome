@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# electron-vite build output
+out/
+
+# Packaged app + installers — never commit DMGs or .app bundles
+dist/
+
+# Bundled SoX binary — regenerated automatically by `npm run build` (prebuild step)
+resources/sox-bundle/
+
+# TypeScript incremental build cache
+tsconfig.web.tsbuildinfo
+
+# macOS cruft
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Env files — never commit secrets
+.env
+.env.*
