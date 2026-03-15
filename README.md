@@ -4,7 +4,7 @@ A push-to-talk speech-to-text tool for macOS. Hold a hotkey, speak, release — 
 
 Built as a personal replacement for Wispr Flow.
 
-> **Transparency note:** This app was vibe coded by Andy using the [Ralph Wiggum loop](https://github.com/snark-tank/ralph) by [Snark Tank](https://github.com/snark-tank) — an autonomous AI coding agent that iterates on a PRD until everything passes. The code was not written by hand.
+> **Transparency note:** This app was vibe coded by Andy using the [Ralph Wiggum loop](https://github.com/snarktank/ralph) by [Snark Tank](https://github.com/snarktank) — an autonomous AI coding agent that iterates on a PRD until everything passes. The code was not written by hand.
 
 ---
 
