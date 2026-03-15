@@ -1,4 +1,4 @@
-# WhisprAtHome
+# WiSPR FloW AT HomEE 
 
 A push-to-talk speech-to-text tool for macOS and Windows. Hold a hotkey, speak, release — your words are transcribed via OpenAI Whisper and pasted into whatever app is focused.
 
