@@ -270,15 +270,15 @@ async function main() {
     const canvas = createCanvas(size, size);
     const ctx = canvas.getContext('2d');
 
-    // White rounded-rect background (matches the corner radius in icon-source.png)
+    // Black rounded-rect background
     const radius = size * 0.2237;
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = '#000000';
     ctx.beginPath();
     ctx.roundRect(0, 0, size, size, radius);
     ctx.fill();
 
-    // Logo at 55% of canvas, centered, giving ~22% padding on each side
-    const scale = 0.55;
+    // Logo at 70% of canvas, centered
+    const scale = 0.70;
     const logoW = size * scale;
     const logoH = logoW * (sourceImg.height / sourceImg.width);
     const x = (size - logoW) / 2;
