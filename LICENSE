@@ -1,0 +1,57 @@
+MIT License
+
+Copyright (c) 2026 Andy Liang
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## Third-Party Licenses
+
+This application bundles pre-compiled binaries from the following libraries.
+Their source code is available at the links below.
+
+| Library | License | Source |
+|---------|---------|--------|
+| SoX | LGPL 2.1+ | https://sourceforge.net/projects/sox/ |
+| libsndfile | LGPL 2.1 | https://github.com/libsndfile/libsndfile |
+| libFLAC | BSD 3-Clause | https://xiph.org/flac/ |
+| libvorbis | BSD 3-Clause | https://xiph.org/vorbis/ |
+| libogg | BSD 3-Clause | https://xiph.org/ogg/ |
+| libopus | BSD 3-Clause | https://opus-codec.org/ |
+| libopusfile | BSD 3-Clause | https://gitlab.xiph.org/xiph/opusfile |
+| libmp3lame | LGPL 2.0 | https://lame.sourceforge.io/ |
+| libmpg123 | LGPL 2.1 | https://www.mpg123.de/ |
+| libmad | GPL 2.0 | https://www.underbit.com/products/mad/ |
+| libpng | libpng License | http://www.libpng.org/pub/png/libpng.html |
+
+### LGPL notice
+
+The LGPL-licensed libraries (SoX, libsndfile, libmp3lame, libmpg123, libsndfile)
+are dynamically linked. You may replace them with your own builds by rebuilding
+the sox-bundle using `scripts/bundle-sox.mjs` against your preferred versions.
+
+### GPL notice
+
+libmad is licensed under GPL 2.0. This application is distributed as open-source
+software under the MIT license with full source code available at:
+https://github.com/Andy-yun-liang/WisprFlowAtHome
+
+Availability of the source satisfies the GPL 2.0 requirement to make
+corresponding source available to recipients of the binary.

@@ -170,4 +170,6 @@ Switch to `large-v3-turbo` in Settings → Whisper Model — it's faster with si
 
 ## License
 
-MIT
+The application code is MIT licensed. See [LICENSE](LICENSE) for full details.
+
+This app bundles SoX and several audio libraries (LGPL/BSD/GPL). libmad is GPL 2.0 — source code availability via this repository satisfies that requirement. All other bundled libraries are LGPL or more permissive.
