@@ -1,6 +1,6 @@
 {
   "name": "whispr-at-home",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Personal push-to-talk speech-to-text with auto-paste",
   "main": "out/main/index.js",
   "author": "WhisprAtHome",
