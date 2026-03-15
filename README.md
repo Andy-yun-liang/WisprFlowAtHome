@@ -86,8 +86,8 @@ Get the latest release: **[v1.1.2](https://github.com/Andy-yun-liang/WisprFlowAt
 - [npm](https://npmjs.com) 10+
 
 ```bash
-git clone https://github.com/your-username/WhisprAtHome.git
-cd WhisprAtHome
+git clone https://github.com/Andy-yun-liang/WisprFlowAtHome.git
+cd WisprFlowAtHome
 npm install
 ```
 
@@ -127,7 +127,7 @@ When the app launches, the **Settings window** opens automatically.
 | Launch at login | Settings → Launch at Login |
 | Remove filler words | Settings → Remove filler words (strips "um", "uh", "like", etc.) |
 
-Your API key is stored in **macOS Keychain** — it never touches disk or any config file.
+Your API key is stored securely in **macOS Keychain** or **Windows Credential Store** — it never touches disk or any config file.
 
 ---
 
@@ -148,7 +148,7 @@ System Settings → Privacy & Security → Accessibility → toggle WhisprAtHome
 
 ## Security
 
-- Your OpenAI API key is stored exclusively in **macOS Keychain** via the system `keytar` API. It is never written to any file.
+- Your OpenAI API key is stored securely via the system `keytar` API (**macOS Keychain** or **Windows Credential Store**). It is never written to any file.
 - No data is sent anywhere except to the OpenAI Whisper API to process your audio.
 - Audio is captured locally, sent to Whisper, and discarded — nothing is stored on disk.
 - The app is unsigned (no Apple Developer account). The `xattr -cr` command above removes the quarantine flag — it does not bypass any security check beyond that.
