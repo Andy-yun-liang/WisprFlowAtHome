@@ -35,6 +35,22 @@ export async function transcribeAudio(pcm: Buffer, settings: TranscribeSettings)
   return results.join(' ')
 }
 
+/**
+ * Transcribe a pre-encoded audio buffer (e.g. WebM from MediaRecorder on Windows).
+ * Sent directly to the API without any PCM conversion.
+ */
+export async function transcribeAudioRaw(audio: Buffer, settings: TranscribeSettings, filename = 'audio.webm', mimeType = 'audio/webm'): Promise<string> {
+  if (!client) throw new Error('Whisper client not initialized — set API key first')
+  const file = new File([audio], filename, { type: mimeType })
+  const response = await client.audio.transcriptions.create({
+    model: settings.whisperModel,
+    file,
+    response_format: 'text',
+    ...(settings.language !== 'auto' ? { language: settings.language } : {})
+  })
+  return (response as unknown as string).trim()
+}
+
 async function transcribeChunk(pcm: Buffer, settings: TranscribeSettings): Promise<string> {
   const wav = pcmToWav(pcm)
 

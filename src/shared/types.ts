@@ -8,7 +8,7 @@ export interface Settings {
   fillerWordRemoval: boolean
   autoStart: boolean
   provider: 'openai' | 'groq'
-  whisperModel: 'whisper-1' | 'whisper-large-v3-turbo'
+  whisperModel: 'whisper-1' | 'gpt-4o-transcribe' | 'gpt-4o-mini-transcribe'
   groqModel: 'whisper-large-v3' | 'whisper-large-v3-turbo' | 'distil-whisper-large-v3-en'
   language: string
   enabledFillerWords: string[]
@@ -41,7 +41,12 @@ export const IPC = {
   // Stats
   STATS_GET: 'stats:get',
   STATS_RESET: 'stats:reset',
-  HISTORY_GET: 'stats:history'
+  HISTORY_GET: 'stats:history',
+
+  // Windows audio capture (renderer-based)
+  AUDIO_START_CAPTURE: 'audio:start-capture',
+  AUDIO_STOP_CAPTURE: 'audio:stop-capture',
+  AUDIO_CAPTURE_DATA: 'audio:capture-data'
 } as const
 
 export type IpcChannel = (typeof IPC)[keyof typeof IPC]

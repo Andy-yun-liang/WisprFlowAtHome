@@ -1,6 +1,7 @@
 import { BrowserWindow, screen } from 'electron'
 import { join } from 'path'
 import { HUD_WIDTH, HUD_HEIGHT } from '@shared/constants'
+import { IPC } from '@shared/types'
 import type { Settings } from '@shared/types'
 
 let hudWindow: BrowserWindow | null = null
@@ -57,6 +58,14 @@ export function createHudWindow(position: Settings['hudPosition'] = 'bottom'): B
     hudWindow.setIgnoreMouseEvents(true, { forward: true })
   }
 
+  // Allow microphone access for Windows audio capture via MediaRecorder
+  hudWindow.webContents.session.setPermissionRequestHandler((_wc, permission, callback) => {
+    callback(permission === 'media' || permission === 'microphone')
+  })
+  hudWindow.webContents.session.setPermissionCheckHandler((_wc, permission) => {
+    return permission === 'media' || permission === 'microphone'
+  })
+
   hudWindow.webContents.on('did-finish-load', () => {
     onHudReady()
   })
@@ -100,4 +109,33 @@ export function hideHud(): void {
 
 export function getHudWindow(): BrowserWindow | null {
   return hudWindow
+}
+
+// ── Windows audio capture control ─────────────────────────────────────────────
+
+let captureResolve: ((buf: Buffer) => void) | null = null
+
+export function startHudCapture(): void {
+  sendToHud(IPC.AUDIO_START_CAPTURE)
+}
+
+export function stopHudCapture(): Promise<Buffer> {
+  return new Promise((resolve) => {
+    captureResolve = resolve
+    sendToHud(IPC.AUDIO_STOP_CAPTURE)
+    // Timeout safety — resolve with empty buffer after 10s if renderer never responds
+    setTimeout(() => {
+      if (captureResolve) {
+        captureResolve(Buffer.alloc(0))
+        captureResolve = null
+      }
+    }, 10000)
+  })
+}
+
+export function onCaptureData(data: Buffer): void {
+  if (captureResolve) {
+    captureResolve(data)
+    captureResolve = null
+  }
 }

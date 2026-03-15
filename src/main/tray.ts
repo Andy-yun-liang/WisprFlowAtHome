@@ -1,4 +1,5 @@
 import { Tray, Menu, nativeImage, app } from 'electron'
+import { join } from 'path'
 import type { AppState } from '@shared/types'
 import { openSettingsWindow } from './settings-window'
 
@@ -11,6 +12,19 @@ const STATE_TITLE: Record<AppState, string> = {
   error:      '⚠️'
 }
 
+const STATE_ICON: Record<AppState, string> = {
+  idle:       'tray-idle.png',
+  recording:  'tray-recording.png',
+  processing: 'tray-processing.png',
+  error:      'tray-error.png'
+}
+
+function getTrayIcon(state: AppState): Electron.NativeImage {
+  if (process.platform !== 'win32') return nativeImage.createEmpty()
+  const resourcesPath = app.isPackaged ? process.resourcesPath : join(app.getAppPath(), 'resources')
+  return nativeImage.createFromPath(join(resourcesPath, STATE_ICON[state]))
+}
+
 function buildContextMenu(): Electron.Menu {
   return Menu.buildFromTemplate([
     { label: 'Settings', click: () => openSettingsWindow() },
@@ -20,9 +34,8 @@ function buildContextMenu(): Electron.Menu {
 }
 
 export function createTray(): Tray {
-  // Use an empty image — icon is shown as text via setTitle()
-  tray = new Tray(nativeImage.createEmpty())
-  tray.setTitle(STATE_TITLE['idle'])
+  tray = new Tray(getTrayIcon('idle'))
+  if (process.platform !== 'win32') tray.setTitle(STATE_TITLE['idle'])
   tray.setToolTip('WhisprAtHome')
   tray.setContextMenu(buildContextMenu())
 
@@ -35,7 +48,8 @@ export function createTray(): Tray {
 
 export function setTrayState(state: AppState): void {
   if (!tray) return
-  tray.setTitle(STATE_TITLE[state])
+  tray.setImage(getTrayIcon(state))
+  if (process.platform !== 'win32') tray.setTitle(STATE_TITLE[state])
 
   const tooltip =
     state === 'recording' ? 'WhisprAtHome — Recording…' :

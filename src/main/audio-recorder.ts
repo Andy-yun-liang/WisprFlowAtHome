@@ -9,11 +9,9 @@ export interface AudioRecorder {
   stop(): Promise<Buffer>
 }
 
-const SOX_FALLBACKS = [
-  '/opt/homebrew/bin/sox',
-  '/usr/local/bin/sox',
-  'sox'
-]
+const SOX_FALLBACKS = process.platform === 'win32'
+  ? ['sox', 'C:\\Program Files (x86)\\sox\\sox.exe', 'C:\\Program Files\\sox\\sox.exe']
+  : ['/opt/homebrew/bin/sox', '/usr/local/bin/sox', 'sox']
 
 function findSox(): string {
   // 1. Prefer bundled binary (works in packaged app without system SoX).
@@ -21,7 +19,8 @@ function findSox(): string {
   //    In dev: fall through to system sox
   const bundledBase = app.isPackaged ? process.resourcesPath : null
   if (bundledBase) {
-    const bundled = join(bundledBase, 'sox-bundle', 'sox')
+    const bundledName = process.platform === 'win32' ? 'sox.exe' : 'sox'
+    const bundled = join(bundledBase, 'sox-bundle', bundledName)
     if (existsSync(bundled)) {
       return bundled
     }
@@ -51,16 +50,27 @@ export function createAudioRecorder(onChunk: (chunk: Buffer) => void): AudioReco
       chunks.length = 0
 
       const soxPath = findSox()
-      const args = [
-        '--default-device',
-        '--no-show-progress',
-        '--rate', String(AUDIO_SAMPLE_RATE),
-        '--channels', String(AUDIO_CHANNELS),
-        '--encoding', 'signed-integer',
-        '--bits', '16',
-        '--type', 'raw',
-        '-'
-      ]
+      const args = process.platform === 'win32'
+        ? [
+            '-t', 'waveaudio', 'default',
+            '--no-show-progress',
+            '--rate', String(AUDIO_SAMPLE_RATE),
+            '--channels', String(AUDIO_CHANNELS),
+            '--encoding', 'signed-integer',
+            '--bits', '16',
+            '--type', 'raw',
+            '-'
+          ]
+        : [
+            '--default-device',
+            '--no-show-progress',
+            '--rate', String(AUDIO_SAMPLE_RATE),
+            '--channels', String(AUDIO_CHANNELS),
+            '--encoding', 'signed-integer',
+            '--bits', '16',
+            '--type', 'raw',
+            '-'
+          ]
 
       console.log(`[AudioRecorder] Spawning: ${soxPath} ${args.join(' ')}`)
 
@@ -107,7 +117,8 @@ export function createAudioRecorder(onChunk: (chunk: Buffer) => void): AudioReco
         })
 
         try {
-          proc!.kill('SIGTERM')
+          // SIGTERM is not supported on Windows — use SIGKILL instead
+          proc!.kill(process.platform === 'win32' ? 'SIGKILL' : 'SIGTERM')
         } catch {
           resolve(Buffer.concat(chunks))
           proc = null

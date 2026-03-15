@@ -295,6 +295,17 @@ async function main() {
   fs.writeFileSync(path.join(buildDir, 'icon.icns'), icnsData);
   console.log(`  Written ${icnsData.length} bytes`);
 
+  // Generate ICO for Windows
+  console.log('Generating build/icon.ico...');
+  const icoSizes = [16, 32, 48, 64, 128, 256];
+  const icoPngEntries = icoSizes.map(size => ({
+    size,
+    png: drawIconWithPadding(size).toBuffer('image/png')
+  }));
+  const icoData = buildIco(icoPngEntries);
+  fs.writeFileSync(path.join(buildDir, 'icon.ico'), icoData);
+  console.log(`  Written ${icoData.length} bytes`);
+
   // Generate DMG background (540x380, dark with centered logo)
   console.log('Generating build/dmg-background.png...');
   const dmgW = 540, dmgH = 380;
@@ -332,15 +343,17 @@ async function main() {
     console.log(`  Written ${png.length} bytes`);
   }
 
-  // Inject logo into built settings HTML as base64 to avoid asar path issues
-  console.log('Inlining logo into built settings HTML...');
-  const logoPng = fs.readFileSync(path.join(resourcesDir, 'logo.png'));
-  const logoB64 = `data:image/png;base64,${logoPng.toString('base64')}`;
-  const builtHtml = path.join(projectRoot, 'out/renderer/settings/index.html');
-  let html = fs.readFileSync(builtHtml, 'utf8');
-  html = html.replace('__LOGO_BASE64__', logoB64);
-  fs.writeFileSync(builtHtml, html);
-  console.log('  Done.');
+  if (mode !== '--icons-only') {
+    // Inject logo into built settings HTML as base64 to avoid asar path issues
+    console.log('Inlining logo into built settings HTML...');
+    const logoPng = fs.readFileSync(path.join(resourcesDir, 'logo.png'));
+    const logoB64 = `data:image/png;base64,${logoPng.toString('base64')}`;
+    const builtHtml = path.join(projectRoot, 'out/renderer/settings/index.html');
+    let html = fs.readFileSync(builtHtml, 'utf8');
+    html = html.replace('__LOGO_BASE64__', logoB64);
+    fs.writeFileSync(builtHtml, html);
+    console.log('  Done.');
+  }
 
   console.log('\nDone! All icon assets generated.');
 }

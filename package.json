@@ -10,7 +10,7 @@
     "prebuild": "node scripts/bundle-sox.mjs && node scripts/generate-icons.mjs --icons-only",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
-    "make": "npm run build && electron-builder --config electron-builder.config.ts",
+    "make": "npm run build && electron-builder --config electron-builder.config.js",
     "postinstall": "electron-rebuild -f -w uiohook-napi,keytar",
     "postbuild": "node scripts/generate-icons.mjs --inline-only"
   },

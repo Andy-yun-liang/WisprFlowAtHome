@@ -5,6 +5,7 @@ import { getSettings, setSetting } from './config-store'
 import { getApiKey, setApiKey, getGroqApiKey, setGroqApiKey } from './keychain'
 import { rebindHotkey } from './hotkey'
 import { getStats, resetStats, getHistory } from './stats-store'
+import { onCaptureData } from './hud-window'
 import type { UsageStats, TranscriptEntry } from '@shared/types'
 
 export function registerIpcHandlers(): void {
@@ -61,5 +62,10 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.SET_LOGIN_ITEM, (_event, enable: boolean): void => {
     app.setLoginItemSettings({ openAtLogin: enable })
     setSetting('autoStart', enable)
+  })
+
+  // Windows audio capture data from renderer
+  ipcMain.on(IPC.AUDIO_CAPTURE_DATA, (_event, data: Uint8Array) => {
+    onCaptureData(Buffer.from(data))
   })
 }

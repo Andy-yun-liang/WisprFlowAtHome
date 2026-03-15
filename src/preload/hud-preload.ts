@@ -21,6 +21,15 @@ contextBridge.exposeInMainWorld('hudApi', {
   onHide: (cb: () => void) => {
     ipcRenderer.on('hud:hide', () => cb())
   },
+  onStartCapture: (cb: () => void) => {
+    ipcRenderer.on(IPC.AUDIO_START_CAPTURE, () => cb())
+  },
+  onStopCapture: (cb: () => void) => {
+    ipcRenderer.on(IPC.AUDIO_STOP_CAPTURE, () => cb())
+  },
+  sendAudioData: (data: Uint8Array) => {
+    ipcRenderer.send(IPC.AUDIO_CAPTURE_DATA, data)
+  },
   removeAllListeners: () => {
     ipcRenderer.removeAllListeners(IPC.APP_STATE_CHANGED)
     ipcRenderer.removeAllListeners(IPC.AUDIO_CHUNK)
@@ -28,5 +37,7 @@ contextBridge.exposeInMainWorld('hudApi', {
     ipcRenderer.removeAllListeners(IPC.TRANSCRIPT_ERROR)
     ipcRenderer.removeAllListeners('hud:show')
     ipcRenderer.removeAllListeners('hud:hide')
+    ipcRenderer.removeAllListeners(IPC.AUDIO_START_CAPTURE)
+    ipcRenderer.removeAllListeners(IPC.AUDIO_STOP_CAPTURE)
   }
 })

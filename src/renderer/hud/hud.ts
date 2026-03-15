@@ -9,6 +9,9 @@ declare global {
       onTranscriptError: (cb: (message: string) => void) => void
       onShow: (cb: () => void) => void
       onHide: (cb: () => void) => void
+      onStartCapture: (cb: () => void) => void
+      onStopCapture: (cb: () => void) => void
+      sendAudioData: (data: Uint8Array) => void
       removeAllListeners: () => void
     }
   }
@@ -122,6 +125,60 @@ window.hudApi.onStateChanged((payload) => {
 
 window.hudApi.onAudioChunk((samples) => {
   pushRms(samples)
+})
+
+// ── Windows audio capture via MediaRecorder ───────────────────────────────────
+
+let mediaRecorder: MediaRecorder | null = null
+let audioChunks: Blob[] = []
+let analyserRafId = 0
+
+window.hudApi.onStartCapture(async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+    audioChunks = []
+
+    // Use Web Audio AnalyserNode to feed the waveform visualizer
+    const audioCtx = new AudioContext()
+    const source = audioCtx.createMediaStreamSource(stream)
+    const analyser = audioCtx.createAnalyser()
+    analyser.fftSize = 256
+    source.connect(analyser)
+    const dataArray = new Float32Array(analyser.fftSize)
+
+    function pollAnalyser() {
+      if (!mediaRecorder || mediaRecorder.state !== 'recording') return
+      analyser.getFloatTimeDomainData(dataArray)
+      pushRms(Array.from(dataArray))
+      analyserRafId = requestAnimationFrame(pollAnalyser)
+    }
+    analyserRafId = requestAnimationFrame(pollAnalyser)
+
+    mediaRecorder = new MediaRecorder(stream)
+    mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data) }
+    mediaRecorder.start(100)
+  } catch (err) {
+    console.error('[HUD] getUserMedia failed:', err)
+    window.hudApi.sendAudioData(new Uint8Array(0))
+  }
+})
+
+window.hudApi.onStopCapture(() => {
+  cancelAnimationFrame(analyserRafId)
+  if (!mediaRecorder) {
+    window.hudApi.sendAudioData(new Uint8Array(0))
+    return
+  }
+  mediaRecorder.onstop = async () => {
+    const mimeType = mediaRecorder?.mimeType ?? 'audio/webm'
+    const blob = new Blob(audioChunks, { type: mimeType })
+    const arrayBuffer = await blob.arrayBuffer()
+    window.hudApi.sendAudioData(new Uint8Array(arrayBuffer))
+    audioChunks = []
+    mediaRecorder = null
+  }
+  mediaRecorder.stream.getTracks().forEach(t => t.stop())
+  mediaRecorder.stop()
 })
 
 window.hudApi.onTranscriptReady((payload) => {

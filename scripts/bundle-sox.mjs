@@ -11,6 +11,11 @@
  * at runtime regardless of where the app is installed.
  */
 
+if (process.platform !== 'darwin') {
+  console.log(`Skipping SoX bundle step on ${process.platform}`)
+  process.exit(0)
+}
+
 import { execSync } from 'child_process'
 import { existsSync, mkdirSync, copyFileSync, chmodSync, realpathSync } from 'fs'
 import { join, basename } from 'path'

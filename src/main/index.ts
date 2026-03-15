@@ -1,9 +1,9 @@
 import { app, BrowserWindow, systemPreferences } from 'electron'
 import { createTray, setTrayState } from './tray'
-import { createHudWindow, showHud, hideHud, getHudWindow, onHudReady, sendToHud } from './hud-window'
+import { createHudWindow, showHud, hideHud, getHudWindow, onHudReady, sendToHud, startHudCapture, stopHudCapture } from './hud-window'
 import { startHotkeyListener } from './hotkey'
 import { createAudioRecorder } from './audio-recorder'
-import { transcribeAudio } from './whisper-client'
+import { transcribeAudio, transcribeAudioRaw } from './whisper-client'
 import { initWhisperClient } from './whisper-client'
 import { cleanTranscript } from './text-cleaner'
 import { pasteText, checkAccessibilityPermission } from './paste-service'
@@ -58,57 +58,107 @@ async function onPttPress(): Promise<void> {
   }
 
   initWhisperClient(apiKey, provider)
-
   recordingStartTime = Date.now()
   setState('recording')
   showHud()
 
-  activeRecorder = createAudioRecorder((chunk: Buffer) => {
-    const int16 = new Int16Array(chunk.buffer, chunk.byteOffset, chunk.length / 2)
-    const float32 = new Float32Array(int16.length)
-    for (let i = 0; i < int16.length; i++) {
-      float32[i] = int16[i] / 32768
-    }
-    sendToHud(IPC.AUDIO_CHUNK, Array.from(float32))
-  })
-
-  activeRecorder.start()
+  if (process.platform === 'win32') {
+    startHudCapture()
+  } else {
+    activeRecorder = createAudioRecorder((chunk: Buffer) => {
+      const int16 = new Int16Array(chunk.buffer, chunk.byteOffset, chunk.length / 2)
+      const float32 = new Float32Array(int16.length)
+      for (let i = 0; i < int16.length; i++) {
+        float32[i] = int16[i] / 32768
+      }
+      sendToHud(IPC.AUDIO_CHUNK, Array.from(float32))
+    })
+    activeRecorder.start()
+  }
 }
 
 async function onPttRelease(): Promise<void> {
-  if (currentState !== 'recording' || !activeRecorder) return
+  if (currentState !== 'recording') return
+  if (process.platform !== 'win32' && !activeRecorder) return
 
   setState('processing')
 
-  let pcm: Buffer
-  try {
-    pcm = await activeRecorder.stop()
-    activeRecorder = null
-  } catch (err) {
-    console.error('[Main] audio stop error:', err)
-    setState('error', 'Failed to stop recording.')
-    setTimeout(() => { setState('idle'); hideHud() }, 3000)
-    return
+  const transcribeSettings = getSettings()
+  const model = transcribeSettings.provider === 'groq'
+    ? transcribeSettings.groqModel
+    : transcribeSettings.whisperModel
+
+  let raw: string
+
+  if (process.platform === 'win32') {
+    let audioBuffer: Buffer
+    try {
+      audioBuffer = await stopHudCapture()
+    } catch (err) {
+      console.error('[Main] Windows audio capture error:', err)
+      setState('error', 'Failed to capture audio.')
+      setTimeout(() => { setState('idle'); hideHud() }, 3000)
+      return
+    }
+
+    if (audioBuffer.length < 500) {
+      console.error(`[Main] Audio buffer too small: ${audioBuffer.length} bytes`)
+      setState('error', 'No audio captured. Check Microphone permission in Windows Settings.')
+      showHud()
+      setTimeout(() => { setState('idle'); hideHud() }, 4000)
+      return
+    }
+
+    try {
+      raw = await transcribeAudioRaw(audioBuffer, {
+        whisperModel: model,
+        language: transcribeSettings.language
+      })
+    } catch (err: unknown) {
+      console.error('[Main] transcription error:', err)
+      const msg = err instanceof Error ? err.message : String(err)
+      setState('error', `Transcription failed: ${msg}`)
+      sendToHud(IPC.TRANSCRIPT_ERROR, msg)
+      setTimeout(() => { setState('idle'); hideHud() }, 4000)
+      return
+    }
+  } else {
+    let pcm: Buffer
+    try {
+      pcm = await activeRecorder!.stop()
+      activeRecorder = null
+    } catch (err) {
+      console.error('[Main] audio stop error:', err)
+      setState('error', 'Failed to stop recording.')
+      setTimeout(() => { setState('idle'); hideHud() }, 3000)
+      return
+    }
+
+    if (pcm.length < 1000) {
+      console.error(`[Main] PCM buffer too small: ${pcm.length} bytes — mic permission may be denied`)
+      setState('error', `No audio captured (${pcm.length} bytes). Check Microphone permission in System Settings.`)
+      showHud()
+      setTimeout(() => { setState('idle'); hideHud() }, 4000)
+      return
+    }
+
+    try {
+      raw = await transcribeAudio(pcm, {
+        whisperModel: model,
+        language: transcribeSettings.language
+      })
+    } catch (err: unknown) {
+      console.error('[Main] transcription error:', err)
+      const msg = err instanceof Error ? err.message : String(err)
+      setState('error', `Transcription failed: ${msg}`)
+      sendToHud(IPC.TRANSCRIPT_ERROR, msg)
+      setTimeout(() => { setState('idle'); hideHud() }, 4000)
+      return
+    }
   }
 
-  if (pcm.length < 1000) {
-    // Too short — either accidental press or mic permission denied
-    console.error(`[Main] PCM buffer too small: ${pcm.length} bytes — mic permission may be denied`)
-    setState('error', `No audio captured (${pcm.length} bytes). Check Microphone permission in System Settings.`)
-    showHud()
-    setTimeout(() => { setState('idle'); hideHud() }, 4000)
-    return
-  }
-
-  try {
-    const transcribeSettings = getSettings()
-    const model = transcribeSettings.provider === 'groq'
-      ? transcribeSettings.groqModel
-      : transcribeSettings.whisperModel
-    const raw = await transcribeAudio(pcm, {
-      whisperModel: model,
-      language: transcribeSettings.language
-    })
+  // Common post-transcription path
+  {
 
     if (!raw.trim()) {
       setState('idle')
@@ -142,12 +192,6 @@ async function onPttRelease(): Promise<void> {
 
     setState('idle')
     setTimeout(() => hideHud(), HUD_DISMISS_DELAY_MS)
-  } catch (err: unknown) {
-    console.error('[Main] transcription error:', err)
-    const msg = err instanceof Error ? err.message : String(err)
-    setState('error', `Transcription failed: ${msg}`)
-    sendToHud(IPC.TRANSCRIPT_ERROR, msg)
-    setTimeout(() => { setState('idle'); hideHud() }, 4000)
   }
 }
 
