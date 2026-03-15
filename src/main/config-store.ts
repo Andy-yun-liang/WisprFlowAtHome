@@ -7,7 +7,9 @@ const DEFAULT_SETTINGS: Settings = {
   hudPosition: 'bottom',
   fillerWordRemoval: true,
   autoStart: false,
+  provider: 'openai',
   whisperModel: 'whisper-1',
+  groqModel: 'whisper-large-v3-turbo',
   language: 'auto',
   enabledFillerWords: [...FILLER_WORDS]
 }
@@ -24,7 +26,9 @@ export function getSettings(): Settings {
     hudPosition: store.get('hudPosition'),
     fillerWordRemoval: store.get('fillerWordRemoval'),
     autoStart: store.get('autoStart'),
+    provider: store.get('provider'),
     whisperModel: store.get('whisperModel'),
+    groqModel: store.get('groqModel'),
     language: store.get('language'),
     enabledFillerWords: store.get('enabledFillerWords')
   }

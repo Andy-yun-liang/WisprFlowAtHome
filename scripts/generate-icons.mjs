@@ -158,6 +158,48 @@ function drawTrayIcon(color) {
   return canvas;
 }
 
+// ─── ICO builder ────────────────────────────────────────────────────────────
+
+/**
+ * Build a Windows .ico file from an array of { size, png } objects.
+ * ICO format: 6-byte header + N*16-byte directory entries + PNG data blobs.
+ */
+function buildIco(pngEntries) {
+  const count = pngEntries.length;
+  const headerSize = 6 + count * 16;
+  const totalSize = headerSize + pngEntries.reduce((s, e) => s + e.png.length, 0);
+  const buf = Buffer.alloc(totalSize);
+  let offset = 0;
+
+  // File header: reserved(2) + type=1(2) + count(2)
+  buf.writeUInt16LE(0, offset); offset += 2;
+  buf.writeUInt16LE(1, offset); offset += 2;
+  buf.writeUInt16LE(count, offset); offset += 2;
+
+  // Directory entries
+  let dataOffset = headerSize;
+  for (const { size, png } of pngEntries) {
+    const s = size >= 256 ? 0 : size; // 0 means 256 in ICO spec
+    buf.writeUInt8(s, offset);        offset += 1; // width
+    buf.writeUInt8(s, offset);        offset += 1; // height
+    buf.writeUInt8(0, offset);        offset += 1; // colour count
+    buf.writeUInt8(0, offset);        offset += 1; // reserved
+    buf.writeUInt16LE(1, offset);     offset += 2; // colour planes
+    buf.writeUInt16LE(32, offset);    offset += 2; // bits per pixel
+    buf.writeUInt32LE(png.length, offset); offset += 4;
+    buf.writeUInt32LE(dataOffset, offset); offset += 4;
+    dataOffset += png.length;
+  }
+
+  // PNG data blobs
+  for (const { png } of pngEntries) {
+    png.copy(buf, offset);
+    offset += png.length;
+  }
+
+  return buf;
+}
+
 // ─── ICNS builder ───────────────────────────────────────────────────────────
 
 // ICNS OSType codes for PNG data at each size
@@ -228,12 +270,15 @@ async function main() {
     const canvas = createCanvas(size, size);
     const ctx = canvas.getContext('2d');
 
-    // White background
+    // White rounded-rect background (matches the corner radius in icon-source.png)
+    const radius = size * 0.2237;
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, size, size);
+    ctx.beginPath();
+    ctx.roundRect(0, 0, size, size, radius);
+    ctx.fill();
 
-    // Logo scaled to 60% of canvas, centered
-    const scale = 0.70;
+    // Logo at 55% of canvas, centered, giving ~22% padding on each side
+    const scale = 0.55;
     const logoW = size * scale;
     const logoH = logoW * (sourceImg.height / sourceImg.width);
     const x = (size - logoW) / 2;

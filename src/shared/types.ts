@@ -7,7 +7,9 @@ export interface Settings {
   hudPosition: 'top' | 'bottom'
   fillerWordRemoval: boolean
   autoStart: boolean
+  provider: 'openai' | 'groq'
   whisperModel: 'whisper-1' | 'whisper-large-v3-turbo'
+  groqModel: 'whisper-large-v3' | 'whisper-large-v3-turbo' | 'distil-whisper-large-v3-en'
   language: string
   enabledFillerWords: string[]
 }
@@ -27,6 +29,8 @@ export const IPC = {
   // Renderer ↔ Main (keychain)
   KEYCHAIN_GET_API_KEY: 'keychain:get-api-key',
   KEYCHAIN_SET_API_KEY: 'keychain:set-api-key',
+  KEYCHAIN_GET_GROQ_KEY: 'keychain:get-groq-key',
+  KEYCHAIN_SET_GROQ_KEY: 'keychain:set-groq-key',
 
   // Renderer → Main (hotkey rebind)
   HOTKEY_REBIND: 'hotkey:rebind',

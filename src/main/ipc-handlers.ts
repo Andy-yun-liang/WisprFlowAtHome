@@ -2,7 +2,7 @@ import { ipcMain, app } from 'electron'
 import { IPC } from '@shared/types'
 import type { Settings } from '@shared/types'
 import { getSettings, setSetting } from './config-store'
-import { getApiKey, setApiKey } from './keychain'
+import { getApiKey, setApiKey, getGroqApiKey, setGroqApiKey } from './keychain'
 import { rebindHotkey } from './hotkey'
 import { getStats, resetStats, getHistory } from './stats-store'
 import type { UsageStats, TranscriptEntry } from '@shared/types'
@@ -30,6 +30,19 @@ export function registerIpcHandlers(): void {
       console.log('[Keychain] setApiKey: saved successfully')
     } catch (err) {
       console.error('[Keychain] setApiKey error:', err)
+    }
+  })
+
+  ipcMain.handle(IPC.KEYCHAIN_GET_GROQ_KEY, async (): Promise<string | null> => {
+    return getGroqApiKey()
+  })
+
+  ipcMain.handle(IPC.KEYCHAIN_SET_GROQ_KEY, async (_event, apiKey: string): Promise<void> => {
+    try {
+      await setGroqApiKey(apiKey)
+      console.log('[Keychain] setGroqApiKey: saved successfully')
+    } catch (err) {
+      console.error('[Keychain] setGroqApiKey error:', err)
     }
   })
 

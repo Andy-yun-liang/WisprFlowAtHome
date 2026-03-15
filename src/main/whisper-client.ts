@@ -1,15 +1,19 @@
 import OpenAI from 'openai'
-import { Readable } from 'stream'
 import { splitPcmIntoChunks, pcmToWav } from './chunk-splitter'
+
+const GROQ_BASE_URL = 'https://api.groq.com/openai/v1'
 
 let client: OpenAI | null = null
 
-export function initWhisperClient(apiKey: string): void {
-  client = new OpenAI({ apiKey })
+export function initWhisperClient(apiKey: string, provider: 'openai' | 'groq' = 'openai'): void {
+  client = new OpenAI({
+    apiKey,
+    ...(provider === 'groq' ? { baseURL: GROQ_BASE_URL } : {})
+  })
 }
 
 export interface TranscribeSettings {
-  whisperModel: 'whisper-1' | 'whisper-large-v3-turbo'
+  whisperModel: string
   language: string
 }
 

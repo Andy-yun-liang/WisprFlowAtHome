@@ -447,25 +447,63 @@
         <!-- API -->
         <div class="settings-group">
           <div class="settings-row">
-            <div>
-              <div class="row-label">OpenAI API Key</div>
-              <div class="row-sublabel">Used for Whisper transcription</div>
-            </div>
-            <div class="row-control" style="flex-direction: column; align-items: flex-end; gap: 4px;">
-              <div class="api-key-row">
-                <input type="password" id="api-key" placeholder="sk-…" autocomplete="off" />
-                <button class="btn btn-primary" id="save-key-btn">Save</button>
+            <span class="row-label">Provider</span>
+            <div class="row-control">
+              <div class="segmented">
+                <button class="segmented-btn active" data-provider="openai" id="provider-openai">OpenAI</button>
+                <button class="segmented-btn" data-provider="groq" id="provider-groq">Groq</button>
               </div>
-              <div class="status-msg" id="key-status"></div>
             </div>
           </div>
-          <div class="settings-row">
-            <span class="row-label">Whisper Model</span>
-            <div class="row-control">
-              <select id="model-select">
-                <option value="whisper-1">whisper-1 (default)</option>
-                <option value="whisper-large-v3-turbo">large-v3-turbo (faster)</option>
-              </select>
+          <!-- OpenAI rows -->
+          <div id="openai-rows">
+            <div class="settings-row">
+              <div>
+                <div class="row-label">OpenAI API Key</div>
+                <div class="row-sublabel">Used for Whisper transcription</div>
+              </div>
+              <div class="row-control" style="flex-direction: column; align-items: flex-end; gap: 4px;">
+                <div class="api-key-row">
+                  <input type="password" id="api-key" placeholder="sk-…" autocomplete="off" />
+                  <button class="btn btn-primary" id="save-key-btn">Save</button>
+                </div>
+                <div class="status-msg" id="key-status"></div>
+              </div>
+            </div>
+            <div class="settings-row">
+              <span class="row-label">Model</span>
+              <div class="row-control">
+                <select id="model-select">
+                  <option value="whisper-1">whisper-1 (standard)</option>
+                  <option value="whisper-large-v3-turbo">large-v3-turbo (faster)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <!-- Groq rows -->
+          <div id="groq-rows" style="display:none">
+            <div class="settings-row">
+              <div>
+                <div class="row-label">Groq API Key</div>
+                <div class="row-sublabel">Free tier available at console.groq.com</div>
+              </div>
+              <div class="row-control" style="flex-direction: column; align-items: flex-end; gap: 4px;">
+                <div class="api-key-row">
+                  <input type="password" id="groq-api-key" placeholder="gsk_…" autocomplete="off" />
+                  <button class="btn btn-primary" id="save-groq-key-btn">Save</button>
+                </div>
+                <div class="status-msg" id="groq-key-status"></div>
+              </div>
+            </div>
+            <div class="settings-row">
+              <span class="row-label">Model</span>
+              <div class="row-control">
+                <select id="groq-model-select">
+                  <option value="whisper-large-v3-turbo">large-v3-turbo (fast)</option>
+                  <option value="distil-whisper-large-v3-en">distil-large-v3-en (fastest, EN only)</option>
+                  <option value="whisper-large-v3">large-v3 (most accurate)</option>
+                </select>
+              </div>
             </div>
           </div>
           <div class="settings-row">

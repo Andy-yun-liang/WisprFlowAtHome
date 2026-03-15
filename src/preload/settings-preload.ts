@@ -15,6 +15,12 @@ contextBridge.exposeInMainWorld('settingsApi', {
   setApiKey: (apiKey: string): Promise<void> =>
     ipcRenderer.invoke(IPC.KEYCHAIN_SET_API_KEY, apiKey),
 
+  getGroqApiKey: (): Promise<string | null> =>
+    ipcRenderer.invoke(IPC.KEYCHAIN_GET_GROQ_KEY),
+
+  setGroqApiKey: (apiKey: string): Promise<void> =>
+    ipcRenderer.invoke(IPC.KEYCHAIN_SET_GROQ_KEY, apiKey),
+
   rebindHotkey: (hotkey: string): Promise<void> =>
     ipcRenderer.invoke(IPC.HOTKEY_REBIND, hotkey),
 

@@ -9,7 +9,7 @@ import { cleanTranscript } from './text-cleaner'
 import { pasteText, checkAccessibilityPermission } from './paste-service'
 import { getSettings } from './config-store'
 import { recordTranscription } from './stats-store'
-import { getApiKey } from './keychain'
+import { getApiKey, getGroqApiKey } from './keychain'
 import { registerIpcHandlers } from './ipc-handlers'
 import { openSettingsWindow } from './settings-window'
 import { IPC } from '@shared/types'
@@ -44,9 +44,11 @@ async function onPttPress(): Promise<void> {
   if (currentState !== 'idle') return
 
   // Verify API key is available before starting
-  const apiKey = await getApiKey()
+  const { provider } = getSettings()
+  const apiKey = provider === 'groq' ? await getGroqApiKey() : await getApiKey()
   if (!apiKey) {
-    setState('error', 'No OpenAI API key set. Open Settings to add your key.')
+    const providerName = provider === 'groq' ? 'Groq' : 'OpenAI'
+    setState('error', `No ${providerName} API key set. Open Settings to add your key.`)
     showHud()
     setTimeout(() => {
       setState('idle')
@@ -55,7 +57,7 @@ async function onPttPress(): Promise<void> {
     return
   }
 
-  initWhisperClient(apiKey)
+  initWhisperClient(apiKey, provider)
 
   recordingStartTime = Date.now()
   setState('recording')
@@ -100,8 +102,11 @@ async function onPttRelease(): Promise<void> {
 
   try {
     const transcribeSettings = getSettings()
+    const model = transcribeSettings.provider === 'groq'
+      ? transcribeSettings.groqModel
+      : transcribeSettings.whisperModel
     const raw = await transcribeAudio(pcm, {
-      whisperModel: transcribeSettings.whisperModel,
+      whisperModel: model,
       language: transcribeSettings.language
     })
 

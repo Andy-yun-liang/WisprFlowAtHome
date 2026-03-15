@@ -8,6 +8,8 @@ declare global {
       setSetting: (key: keyof Settings, value: Settings[keyof Settings]) => Promise<void>
       getApiKey: () => Promise<string | null>
       setApiKey: (apiKey: string) => Promise<void>
+      getGroqApiKey: () => Promise<string | null>
+      setGroqApiKey: (apiKey: string) => Promise<void>
       rebindHotkey: (hotkey: string) => Promise<void>
       setLoginItem: (enable: boolean) => Promise<void>
       getStats: () => Promise<UsageStats>
@@ -93,16 +95,39 @@ resetStatsBtn.addEventListener('click', async () => {
 
 // ── Settings section ──────────────────────────────────────────────────────────
 
-// API Key
-const apiKeyInput = document.getElementById('api-key') as HTMLInputElement
-const saveKeyBtn = document.getElementById('save-key-btn') as HTMLButtonElement
-const keyStatus = document.getElementById('key-status')!
-
 function showStatus(el: HTMLElement, msg: string, isError = false): void {
   el.textContent = msg
   el.className = 'status-msg' + (isError ? ' error' : '')
   setTimeout(() => { el.textContent = '' }, 2000)
 }
+
+// Provider toggle
+const providerOpenAI = document.getElementById('provider-openai') as HTMLButtonElement
+const providerGroq = document.getElementById('provider-groq') as HTMLButtonElement
+const openaiRows = document.getElementById('openai-rows')!
+const groqRows = document.getElementById('groq-rows')!
+
+function setProvider(p: 'openai' | 'groq'): void {
+  providerOpenAI.classList.toggle('active', p === 'openai')
+  providerGroq.classList.toggle('active', p === 'groq')
+  openaiRows.style.display = p === 'openai' ? '' : 'none'
+  groqRows.style.display = p === 'groq' ? '' : 'none'
+}
+
+providerOpenAI.addEventListener('click', async () => {
+  setProvider('openai')
+  await window.settingsApi.setSetting('provider', 'openai')
+})
+
+providerGroq.addEventListener('click', async () => {
+  setProvider('groq')
+  await window.settingsApi.setSetting('provider', 'groq')
+})
+
+// OpenAI API Key
+const apiKeyInput = document.getElementById('api-key') as HTMLInputElement
+const saveKeyBtn = document.getElementById('save-key-btn') as HTMLButtonElement
+const keyStatus = document.getElementById('key-status')!
 
 apiKeyInput.addEventListener('focus', () => {
   if (apiKeyInput.dataset.hasKey === 'true') {
@@ -127,9 +152,42 @@ saveKeyBtn.addEventListener('click', async () => {
   }
 })
 
+// Groq API Key
+const groqApiKeyInput = document.getElementById('groq-api-key') as HTMLInputElement
+const saveGroqKeyBtn = document.getElementById('save-groq-key-btn') as HTMLButtonElement
+const groqKeyStatus = document.getElementById('groq-key-status')!
+
+groqApiKeyInput.addEventListener('focus', () => {
+  if (groqApiKeyInput.dataset.hasKey === 'true') {
+    groqApiKeyInput.value = ''
+    groqApiKeyInput.dataset.hasKey = 'false'
+  }
+})
+
+saveGroqKeyBtn.addEventListener('click', async () => {
+  const value = groqApiKeyInput.value.trim()
+  if (!value || value.startsWith('●')) {
+    showStatus(groqKeyStatus, 'Enter a new API key to save', true)
+    return
+  }
+  try {
+    await window.settingsApi.setGroqApiKey(value)
+    groqApiKeyInput.value = '●'.repeat(20)
+    groqApiKeyInput.dataset.hasKey = 'true'
+    showStatus(groqKeyStatus, 'Saved ✓')
+  } catch {
+    showStatus(groqKeyStatus, 'Failed to save key', true)
+  }
+})
+
 const modelSelect = document.getElementById('model-select') as HTMLSelectElement
 modelSelect.addEventListener('change', async () => {
   await window.settingsApi.setSetting('whisperModel', modelSelect.value as Settings['whisperModel'])
+})
+
+const groqModelSelect = document.getElementById('groq-model-select') as HTMLSelectElement
+groqModelSelect.addEventListener('change', async () => {
+  await window.settingsApi.setSetting('groqModel', groqModelSelect.value as Settings['groqModel'])
 })
 
 const languageSelect = document.getElementById('language-select') as HTMLSelectElement
@@ -211,22 +269,31 @@ fillerToggle.addEventListener('change', async () => {
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 async function loadSettings(): Promise<void> {
-  const [settings, apiKey] = await Promise.all([
+  const [settings, apiKey, groqApiKey] = await Promise.all([
     window.settingsApi.getSettings(),
-    window.settingsApi.getApiKey()
+    window.settingsApi.getApiKey(),
+    window.settingsApi.getGroqApiKey()
   ])
 
   hotKeyBadge.textContent = settings.hotkey
   setHudPosition(settings.hudPosition)
   autostartToggle.checked = settings.autoStart
 
+  setProvider(settings.provider ?? 'openai')
+
   if (apiKey) {
     apiKeyInput.value = '●'.repeat(20)
     apiKeyInput.dataset.hasKey = 'true'
   }
   modelSelect.value = settings.whisperModel
-  languageSelect.value = settings.language
 
+  if (groqApiKey) {
+    groqApiKeyInput.value = '●'.repeat(20)
+    groqApiKeyInput.dataset.hasKey = 'true'
+  }
+  groqModelSelect.value = settings.groqModel ?? 'whisper-large-v3-turbo'
+
+  languageSelect.value = settings.language
   fillerToggle.checked = settings.fillerWordRemoval
 }
 
