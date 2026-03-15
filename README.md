@@ -8,6 +8,14 @@ Built as a personal replacement for Wispr Flow.
 
 ---
 
+## Screenshots
+
+| Home | Settings | About |
+|:---:|:---:|:---:|
+| ![Home](docs/screenshots/home.png) | ![Settings](docs/screenshots/settings.png) | ![About](docs/screenshots/about.png) |
+
+---
+
 ## How it works
 
 1. Hold your PTT hotkey (default: `Ctrl+Option`)
